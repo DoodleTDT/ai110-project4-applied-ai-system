@@ -1,0 +1,51 @@
+id, title,                artist,           genre,      mood,    energy, tempo_bpm, valence, acousticness
+1,  Sunrise City,         Neon Echo,        pop,        happy,   0.82,   118,       0.84,    0.18
+2,  Midnight Coding,      LoRoom,           lofi,       chill,   0.42,   78,        0.56,    0.71
+3,  Storm Runner,         Voltline,         rock,       intense, 0.91,   152,       0.48,    0.10
+4,  Library Rain,         Paper Lanterns,   lofi,       chill,   0.35,   72,        0.60,    0.86
+5,  Gym Hero,             Max Pulse,        pop,        intense, 0.93,   132,       0.77,    0.05
+6,  Spacewalk Thoughts,   Orbit Bloom,      ambient,    chill,   0.28,   60,        0.65,    0.92
+7,  Coffee Shop Stories,  Slow Stereo,      jazz,       relaxed, 0.37,   90,        0.71,    0.89
+8,  Night Drive Loop,     Neon Echo,        synthwave,  moody,   0.75,   110,       0.49,    0.22
+9,  Focus Flow,           LoRoom,           lofi,       focused, 0.40,   80,        0.59,    0.78
+10, Rooftop Lights,       Indigo Parade,    indie pop,  happy,   0.76,   124,       0.81,    0.35
+11, Desert Highway,       Cedar Canyon,     country,    relaxed, 0.62,   104,       0.73,    0.42
+12, Dub Garden,           Island Signal,    reggae,     happy,   0.68,   96,        0.82,    0.34
+13, Glass Cathedral,      Aster Quartet,    classical,  focused, 0.22,   68,        0.38,    0.94
+14, Iron Horizon,         Black Anvil,      metal,      intense, 0.96,   168,       0.31,    0.04
+15, Pocket Groove,        The Brass Frames, funk,       happy,   0.81,   112,       0.88,    0.19
+16, Northbound,           Mara Field,       folk,       relaxed, 0.46,   88,        0.67,    0.76
+17, Velvet Static,        June Meridian,    R&B,        moody,   0.55,   86,        0.61,    0.38
+18, Calle del Sol,        Luna Mercado,     salsa,      happy,   0.88,   124,       0.91,    0.16
+19, Basement Signal,      Paper Circuit,    punk,       intense, 0.89,   176,       0.57,    0.07
+20, Sunday Light,         Golden Assembly,  gospel,     happy,   0.72,   108,       0.86,    0.28
+21, Bright Weather,       Mira Sol,         pop,        happy,   0.74,   121,       0.86,    0.24
+22, Soft Transit,         Lowline,          lofi,       chill,   0.33,   74,        0.52,    0.82
+23, Signal Fire,          Granite Avenue,   rock,       intense, 0.88,   146,       0.55,    0.12
+24, Cloud Atlas,          Still Air,        ambient,    chill,   0.18,   56,        0.61,    0.96
+25, Blue Hour Cafe,       Ellis Row,        jazz,       relaxed, 0.44,   92,        0.69,    0.73
+26, Neon Pursuit,         Chrome Coast,     synthwave,  moody,   0.79,   116,       0.58,    0.17
+27, Polaroid Summer,      Violet Transit,   indie pop,  happy,   0.71,   126,       0.83,    0.31
+28, Old Pine Road,        June Hollow,      country,    relaxed, 0.57,   98,        0.72,    0.49
+29, Morning Tide,         Harbor Roots,     reggae,     happy,   0.63,   94,        0.79,    0.40
+30, Winter Nocturne,      Rowan Ensemble,   classical,  focused, 0.25,   64,        0.43,    0.91
+31, Break the Static,     Iron Orchard,     metal,      intense, 0.97,   172,       0.36,    0.03
+32, Sidewalk Shuffle,     Pocket Theory,    funk,       happy,   0.84,   115,       0.89,    0.22
+33, River Letters,        Wren and Willow,  folk,       relaxed, 0.39,   82,        0.64,    0.84
+34, After the Rain,       Nia Vale,         R&B,        moody,   0.51,   88,        0.62,    0.44
+35, Baila Conmigo,        Sol y Son,        salsa,      happy,   0.90,   128,       0.93,    0.14
+36, Fast Forward,         Civic Noise,      punk,       intense, 0.92,   184,       0.51,    0.05
+37, Carry the Light,      New Mercy Choir,  gospel,     happy,   0.69,   102,       0.85,    0.32
+38, Satellite Heart,      The Dayglow Kids, pop,        happy,   0.80,   130,       0.87,    0.20
+39, Window Seat,          Tape Garden,      lofi,       focused, 0.38,   76,        0.57,    0.79
+40, Wild Horizon,         Westbound Riot,   rock,       intense, 0.86,   158,       0.54,    0.11
+41, Quiet Orbit,          Auralis,          ambient,    chill,   0.21,   58,        0.64,    0.95
+42, Blue Window,          Miles Arden,      jazz,       relaxed, 0.43,   84,        0.68,    0.78
+43, Afterglow Circuit,    Vela Run,         synthwave,  moody,   0.71,   108,       0.53,    0.25
+44, Paper Planets,        June Static,      indie pop,  happy,   0.66,   120,       0.79,    0.39
+45, Amber Fence,          Hollis Creek,     country,    relaxed, 0.54,   96,        0.70,    0.56
+46, Island Letters,       Riddim Harbor,    reggae,     happy,   0.61,   92,        0.81,    0.46
+47, Stillwater Prelude,   Northglass Ensemble, classical, focused, 0.16, 62,        0.41,    0.97
+48, Furnace Sky,          Ember Crown,      metal,      intense, 0.94,   164,       0.34,    0.06
+49, Brassline Bounce,     Sunday Standard,  funk,       happy,   0.83,   116,       0.90,    0.21
+50, Meadow Lines,         The Alder Sisters, folk,      relaxed, 0.36,   80,        0.63,    0.87
