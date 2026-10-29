@@ -13,7 +13,7 @@ Right now [recommender.py](ai110-project4-applied-ai-system/src/recommender.py) 
 ### 2. A pipeline with a clear "search outside" trigger
 1. Parse request → profile.
 2. Retrieve local candidates (existing scorer, plus optional semantic search over a short text description per song).
-3. **Coverage check:** if fewer than `k` songs score above a threshold (e.g. 6/9), or a requested genre has fewer than N songs, go to external search. Otherwise skip it. This saves API calls and gives the system a rule you can explain.
+3. **Coverage check:** if fewer than `k` songs score above a threshold (e.g. 6/9), or a requested genre has fewer than N songs, go to external search. Otherwise skip it. This saves API calls and gives the system a rule you can explain. The `songs` table will start nearly empty (see section 8), so early requests will almost always search outside. That's expected.
 4. External search → the songs table schema → validate.
 5. Merge, re-rank with the same scorer, and have the LLM write the final playlist with a reason for each song, citing the retrieved data.
 
@@ -28,7 +28,7 @@ Right now [recommender.py](ai110-project4-applied-ai-system/src/recommender.py) 
 - Treat the API as the source of truth for "this song exists." Treat the LLM as the source of the "vibe" labels.
 
 ### 4. Guardrails before anything is added to the DB
-- **Verify:** only add a song if the title and artist match a Deezer search result.
+- **Verify:** only add a song if the title and artist match a Deezer search result. This applies to the 50 starter songs too. The starter CSV appears to be made up, so most of its rows are expected to fail.
 - **Dedupe:** reuse `_normalize` and `_check_duplicates` (title + artist) so near-duplicates like "Song (Remastered)" get caught.
 - **Schema validation:** numbers must be in 0–1, the genre must be on a controlled list.
 - **Provenance columns:** `source`, `added_at`, `confidence`, `estimated_fields`.
@@ -54,7 +54,8 @@ Right now [recommender.py](ai110-project4-applied-ai-system/src/recommender.py) 
 - The UI can use Streamlit, which is already in `requirements.txt`: a text box for the description, a results table with reasons, and a "pending additions" review panel that shows each song's confidence and has Approve / Reject buttons.
 - Storage: SQLite from the start (Python's built-in `sqlite3`, no extra dependency), in a single `.db3` file.
   - Tables: `songs`, `pending_songs`, and an optional `external_cache` table for the cached API results.
-  - A one-time migration script loads the existing 50-song CSV into `songs`. After that the CSV is only a seed file.
+  - A one-time seed script copies all 50 rows from `data/songs.csv` into `pending_songs` (not `songs`), with `source='seed_csv'`. It then runs the Deezer title + artist check on each row and records the result (`verified` true/false, plus the Deezer track ID when one matches). The rows then go through the normal approve/reject review.
+  - `data/songs.csv` stays unchanged, because `tests/test_recommender.py` loads it directly as test data.
   - Put a `UNIQUE` constraint on the normalized title + artist (and on `mbid` when there is one), so the database itself rejects duplicates on top of `_check_duplicates`.
   - Use `CHECK` constraints to keep energy, valence and acousticness between 0 and 1, which backs up the schema validation in section 4.
 
@@ -65,4 +66,5 @@ Right now [recommender.py](ai110-project4-applied-ai-system/src/recommender.py) 
 
 ## Verification (once implemented)
 - `pytest` with mocked LLM and API covering parse → retrieve → coverage trigger → validate → stage.
+- After seeding: `songs` is empty and `pending_songs` has 50 rows, each with a recorded verification result.
 - Manual run: an underrepresented-genre prompt (e.g. "sad low-energy rock") should trigger external search, add verified songs to the pending list with a confidence score (they reach the main table only after approval), and return a playlist where every song can be traced to a source.
