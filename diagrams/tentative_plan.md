@@ -7,14 +7,14 @@ Right now [recommender.py](ai110-project4-applied-ai-system/src/recommender.py) 
 
 ### 1. Use the LLM to translate the request, and let retrieval pick the songs
 - Step 1: the LLM turns "rainy Sunday study playlist, a little jazzy" into structured preferences (genres, mood, energy range, acoustic, tempo/valence).
-- Reuse `UserProfile` and `score_song()` as the ranker. That keeps the scoring explainable (`explain_recommendation` still works) and keeps the existing tests useful. 
+- Reuse `UserProfile` and `score_song()` as the ranker, with its fixed 9-point weights in v1. That keeps the scoring explainable (`explain_recommendation` still works) and keeps the existing tests useful. 
 - The LLM should never get to "recommend" a song from memory alone. Every song it returns has to come from a retrieval step (local DB or an external API result). That is the main defense against made-up songs and artists.
 
 ### 2. A pipeline with a clear "search outside" trigger
 1. Parse request → profile.
 2. Retrieve local candidates (existing scorer, plus optional semantic search over a short text description per song).
 3. **Coverage check:** if fewer than `k` songs score above a threshold (e.g. 6/9), or a requested genre has fewer than N songs, go to external search. Otherwise skip it. This saves API calls and gives the system a rule you can explain.
-4. External search → normalize to the CSV schema → validate.
+4. External search → the songs table schema → validate.
 5. Merge, re-rank with the same scorer, and have the LLM write the final playlist with a reason for each song, citing the retrieved data.
 
 ### 3. Pick an external source that returns real metadata
@@ -32,7 +32,10 @@ Right now [recommender.py](ai110-project4-applied-ai-system/src/recommender.py) 
 - **Dedupe:** reuse `_normalize` and `_check_duplicates` (title + artist) so near-duplicates like "Song (Remastered)" get caught.
 - **Schema validation:** numbers must be in 0–1, the genre must be on a controlled list.
 - **Provenance columns:** `source`, `added_at`, `confidence`, `estimated_fields`.
-- **Staging:** write new songs to `songs_pending.csv` first and promote them to `songs.csv` after a review. The review can be by a human, or automatic for high-confidence songs. This keeps one bad LLM call from corrupting the dataset.
+- **Staging:** write new songs to a `pending_songs` table in the SQLite database (`.db3`) first, and move them into the main `songs` table after a review. Each promotion runs as a single transaction (insert into `songs`, delete from `pending_songs`), so a song is never half-moved. This keeps one bad LLM call from corrupting the dataset.
+  - **v1: manual approval only.** Every verified song waits in pending until it is approved. Nothing is promoted automatically.
+  - Each pending song still records its `confidence` score and `estimated_fields`. The review panel shows both to help with approve/reject decisions.
+  - **Later (optional):** auto-approve songs above a confidence threshold, once the confidence scores have proven to match real quality.
 
 ### 5. Fix the genre problem at the same time
 - Add a small genre taxonomy (`metal → rock`, `indie pop → pop`, …) that the LLM maps new genres onto. This replaces the word-subset rule in `_match_genre` and fixes the metal/rock limitation. It also stops new labels like "Alt-Rock" from fragmenting the genre list.
@@ -48,19 +51,18 @@ Right now [recommender.py](ai110-project4-applied-ai-system/src/recommender.py) 
 ### 8. Practical scope
 - LLM: Claude API with tool use. Tools: `search_local_db`, `search_external`, `propose_song_addition`. A small, cheap model can handle parsing.
 - Cache external results and keep API keys in a `.env` file.
-- The UI can use Streamlit, which is already in `requirements.txt`: a text box for the description, a results table with reasons, and a "pending additions" review panel.
-- CSV is fine at this size. Move to SQLite only if concurrent writes or >~5k songs become a problem.
+- The UI can use Streamlit, which is already in `requirements.txt`: a text box for the description, a results table with reasons, and a "pending additions" review panel that shows each song's confidence and has Approve / Reject buttons.
+- Storage: SQLite from the start (Python's built-in `sqlite3`, no extra dependency), in a single `.db3` file.
+  - Tables: `songs`, `pending_songs`, and an optional `external_cache` table for the cached API results.
+  - A one-time migration script loads the existing 50-song CSV into `songs`. After that the CSV is only a seed file.
+  - Put a `UNIQUE` constraint on the normalized title + artist (and on `mbid` when there is one), so the database itself rejects duplicates on top of `_check_duplicates`.
+  - Use `CHECK` constraints to keep energy, valence and acousticness between 0 and 1, which backs up the schema validation in section 4.
 
 ## Open decisions for the user
 - ~~Which external source (Last.fm / MusicBrainz / Deezer)?~~ Decided: Last.fm + Deezer (see section 3).
-- Auto-add verified songs, or always require approval?
-- Keep the hand-tuned 9-point scorer as the ranker, or let the user (or the LLM) adjust the weights per request?
+- ~~Auto-add verified songs, or always require approval?~~ Decided: manual approval for v1. Confidence is still recorded, and auto-add is a possible later addition (see section 4).
+- ~~Keep the hand-tuned 9-point scorer as the ranker, or let the user (or the LLM) adjust the weights per request?~~ Decided: v1 keeps the fixed 9-point weights. Per-request weights (set by the user or the LLM) are a possible later addition if the rankings feel too rigid.
 
 ## Verification (once implemented)
 - `pytest` with mocked LLM and API covering parse → retrieve → coverage trigger → validate → stage.
-- Manual run: an underrepresented-genre prompt (e.g. "sad low-energy rock") should trigger external search, add verified songs to the pending list, and return a playlist where every song can be traced to a source.
-
-
-Notes on plan:
-> I would rather move to SQLite now so extra implementation doesn't have to happen later (Section 8 for context)
-> Since SQLite will be used instead, pending new songs will be added to a `.db3` instead of a `.csv` (Section 4: Staging for context)
+- Manual run: an underrepresented-genre prompt (e.g. "sad low-energy rock") should trigger external search, add verified songs to the pending list with a confidence score (they reach the main table only after approval), and return a playlist where every song can be traced to a source.
