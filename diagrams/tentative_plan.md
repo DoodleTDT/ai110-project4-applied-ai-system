@@ -7,7 +7,7 @@ Right now [recommender.py](ai110-project4-applied-ai-system/src/recommender.py) 
 
 ### 1. Use the LLM to translate the request, and let retrieval pick the songs
 - Step 1: the LLM turns "rainy Sunday study playlist, a little jazzy" into structured preferences (genres, mood, energy range, acoustic, tempo/valence).
-- Reuse `UserProfile` and `score_song()` as the ranker. That keeps the scoring explainable (`explain_recommendation` still works) and keeps the existing tests useful.
+- Reuse `UserProfile` and `score_song()` as the ranker. That keeps the scoring explainable (`explain_recommendation` still works) and keeps the existing tests useful. 
 - The LLM should never get to "recommend" a song from memory alone. Every song it returns has to come from a retrieval step (local DB or an external API result). That is the main defense against made-up songs and artists.
 
 ### 2. A pipeline with a clear "search outside" trigger
@@ -19,11 +19,16 @@ Right now [recommender.py](ai110-project4-applied-ai-system/src/recommender.py) 
 
 ### 3. Pick an external source that returns real metadata
 - The scorer needs energy, valence, acousticness and tempo. Spotify's audio-features endpoint is closed to new apps (since late 2024), so plan for that.
-- Options: Last.fm (tags work as genre/mood), MusicBrainz (verifies the song exists, gives IDs), Deezer (has BPM). Any field you can't get could be estimated by the LLM, but only if it's flagged `estimated=true`.
+- **Decision: Last.fm + Deezer.**
+  - **Last.fm** handles external search: `tag.getTopTracks` (e.g. "sad" + "rock"), `track.getSimilar`, and `track.getTopTags`. Its tags supply genre and mood, and the LLM uses them as hints when it estimates the other fields.
+  - **Deezer** verifies that each song exists (`/search` on title + artist) and supplies `bpm` (treated as missing when it is 0) plus a preview URL.
+  - When Last.fm returns an `mbid` (MusicBrainz ID), store it as an optional ID for deduping. MusicBrainz is not called directly because of its 1 request/second limit.
+  - Energy, valence and acousticness are always LLM-estimated and listed in `estimated_fields`.
+  - The Last.fm API key goes in `.env`. Deezer's public search needs no key.
 - Treat the API as the source of truth for "this song exists." Treat the LLM as the source of the "vibe" labels.
 
 ### 4. Guardrails before anything is added to the DB
-- **Verify:** only add a song if the title and artist match an external API record.
+- **Verify:** only add a song if the title and artist match a Deezer search result.
 - **Dedupe:** reuse `_normalize` and `_check_duplicates` (title + artist) so near-duplicates like "Song (Remastered)" get caught.
 - **Schema validation:** numbers must be in 0–1, the genre must be on a controlled list.
 - **Provenance columns:** `source`, `added_at`, `confidence`, `estimated_fields`.
@@ -47,10 +52,15 @@ Right now [recommender.py](ai110-project4-applied-ai-system/src/recommender.py) 
 - CSV is fine at this size. Move to SQLite only if concurrent writes or >~5k songs become a problem.
 
 ## Open decisions for the user
-- Which external source (Last.fm / MusicBrainz / Deezer)?
+- ~~Which external source (Last.fm / MusicBrainz / Deezer)?~~ Decided: Last.fm + Deezer (see section 3).
 - Auto-add verified songs, or always require approval?
 - Keep the hand-tuned 9-point scorer as the ranker, or let the user (or the LLM) adjust the weights per request?
 
 ## Verification (once implemented)
 - `pytest` with mocked LLM and API covering parse → retrieve → coverage trigger → validate → stage.
 - Manual run: an underrepresented-genre prompt (e.g. "sad low-energy rock") should trigger external search, add verified songs to the pending list, and return a playlist where every song can be traced to a source.
+
+
+Notes on plan:
+> I would rather move to SQLite now so extra implementation doesn't have to happen later (Section 8 for context)
+> Since SQLite will be used instead, pending new songs will be added to a `.db3` instead of a `.csv` (Section 4: Staging for context)
