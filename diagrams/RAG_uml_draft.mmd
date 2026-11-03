@@ -1,0 +1,224 @@
+classDiagram
+    %% =====================================================================
+    %% MusicMatchMaker - RAG version (class diagram draft)
+    %% Built from diagrams/RAG_flowchart_draft.mmd.
+    %% <<module>> boxes are plain-function modules, not real classes.
+    %% =====================================================================
+
+    %% ---------- Existing code (src/recommender.py), extended ----------
+    class Song {
+        <<dataclass>>
+        +id: int
+        +title: str
+        +artist: str
+        +genre: str
+        +mood: str
+        +energy: float
+        +tempo_bpm: Optional~float~
+        +valence: float
+        +acousticness: float
+        +source: str  NEW
+        +mbid: Optional~str~  NEW
+        +deezer_id: Optional~int~  NEW
+        +preview_url: Optional~str~  NEW
+        +confidence: Optional~float~  NEW
+        +estimated_fields: List~str~  NEW
+        +added_at: Optional~datetime~  NEW
+    }
+
+    class UserProfile {
+        <<dataclass>>
+        +favorite_genres: List~str~
+        +favorite_mood: str
+        +target_energy: float
+        +likes_acoustic: Optional~bool~
+        +__post_init__() validates 1 to 3 genres, clamps energy
+    }
+
+    class Recommender {
+        +songs: List~Song~
+        +recommend(user: UserProfile, k: int) List~Song~
+        +explain_recommendation(user: UserProfile, song: Song) str
+    }
+
+    class recommender {
+        <<module>>
+        +GENRE_WEIGHT = 4.0
+        +MOOD_WEIGHT = 2.0
+        +ENERGY_WEIGHT = 2.0
+        +ACOUSTIC_WEIGHT = 1.0
+        +load_songs(csv_path: str) List~dict~
+        +score_song(user_prefs: dict, song: dict) tuple
+        +recommend_songs(user_prefs: dict, songs: List~dict~, k: int) List~tuple~
+        -_normalize(label: str) str
+        -_clamp(value: float) float
+        -_check_duplicates(songs: List~dict~) None
+        -_match_genre(favorites: List~str~, song_genre: str) Optional~str~  uses GenreTaxonomy
+    }
+
+    %% ---------- genres.py ----------
+    class GenreTaxonomy {
+        -parents: dict
+        +canonical(label: str) str
+        +parent(genre: str) Optional~str~
+        +matches(favorites: List~str~, song_genre: str) Optional~str~
+        +is_allowed(genre: str) bool
+    }
+
+    %% ---------- database.py (SQLite .db3) ----------
+    class SongDatabase {
+        -path: str
+        -conn: sqlite3.Connection
+        +create_tables() None
+        +get_songs() List~Song~
+        +add_pending(song: Song) int
+        +list_pending() List~Song~
+        +approve(pending_id: int) None  one transaction
+        +reject(pending_id: int) None
+        +genre_counts() dict
+        +cache_get(key: str) Optional~dict~
+        +cache_put(key: str, data: dict) None
+    }
+
+    %% ---------- llm.py (Claude API) ----------
+    class RequestParser {
+        -client: Anthropic
+        -model: str
+        +parse(text: str) UserProfile
+    }
+
+    class VibeEstimator {
+        -client: Anthropic
+        +estimate(title: str, artist: str, tags: List~str~) dict
+    }
+
+    class PlaylistWriter {
+        -client: Anthropic
+        +write(ranked: List~PlaylistEntry~) str
+    }
+
+    %% ---------- external.py ----------
+    class LastFmClient {
+        -api_key: str  from .env
+        -db: SongDatabase
+        +tag_top_tracks(tag: str, limit: int) List~dict~
+        +similar_tracks(title: str, artist: str) List~dict~
+        +top_tags(title: str, artist: str) List~str~
+    }
+
+    class DeezerClient {
+        -db: SongDatabase
+        +search(title: str, artist: str) Optional~DeezerMatch~
+    }
+
+    class DeezerMatch {
+        <<dataclass>>
+        +deezer_id: int
+        +title: str
+        +artist: str
+        +bpm: Optional~float~  0 means missing
+        +preview_url: str
+    }
+
+    %% ---------- validation.py ----------
+    class SongValidator {
+        -deezer: DeezerClient
+        -taxonomy: GenreTaxonomy
+        +verify(candidate: dict) Optional~DeezerMatch~
+        +validate_schema(song: Song) bool
+        +is_duplicate(song: Song, existing: List~Song~) bool
+        +confidence(song: Song) float
+    }
+
+    %% ---------- pipeline.py ----------
+    class CoverageChecker {
+        +threshold: float = 6.0
+        +min_per_genre: int
+        +needs_external(ranked: List~tuple~, profile: UserProfile, k: int) bool
+        +target_genres(profile: UserProfile, genre_counts: dict) List~str~
+    }
+
+    class PlaylistAgent {
+        -db: SongDatabase
+        -parser: RequestParser
+        -coverage: CoverageChecker
+        -lastfm: LastFmClient
+        -deezer: DeezerClient
+        -estimator: VibeEstimator
+        -validator: SongValidator
+        -writer: PlaylistWriter
+        -logger: AgentLogger
+        +run(request: str, k: int) List~PlaylistEntry~
+        +search_local_db(profile: UserProfile) List~Song~  tool
+        +search_external(profile: UserProfile) List~dict~  tool
+        +propose_song_addition(candidate: dict) Optional~Song~  tool
+    }
+
+    class PlaylistEntry {
+        <<dataclass>>
+        +song: Song
+        +score: float
+        +reason: str
+        +source: str
+        +pending_review: bool
+    }
+
+    %% ---------- logging_utils.py ----------
+    class AgentLogger {
+        -log_path: str
+        +log_step(step: str, payload: dict) None
+    }
+
+    %% ---------- Entry points ----------
+    class seed_db {
+        <<script>>
+        +seed_from_csv(csv_path: str, db: SongDatabase, deezer: DeezerClient) None
+    }
+
+    class app {
+        <<Streamlit>>
+        +request box
+        +results table with reasons
+        +pending review panel: Approve / Reject
+    }
+
+    %% ---------- Relationships ----------
+    Recommender o-- "*" Song
+    Recommender ..> recommender : calls recommend_songs, score_song
+    recommender ..> UserProfile : builds
+    recommender ..> GenreTaxonomy : _match_genre
+
+    SongDatabase "1" o-- "*" Song : songs + pending_songs
+
+    PlaylistAgent o-- SongDatabase
+    PlaylistAgent *-- RequestParser
+    PlaylistAgent *-- CoverageChecker
+    PlaylistAgent *-- LastFmClient
+    PlaylistAgent *-- DeezerClient
+    PlaylistAgent *-- VibeEstimator
+    PlaylistAgent *-- SongValidator
+    PlaylistAgent *-- PlaylistWriter
+    PlaylistAgent *-- AgentLogger
+    PlaylistAgent ..> recommender : rank and re-rank with recommend_songs
+    PlaylistAgent ..> PlaylistEntry : returns
+
+    RequestParser ..> UserProfile : creates
+    RequestParser --> GenreTaxonomy : canonical
+    CoverageChecker ..> UserProfile
+
+    LastFmClient --> SongDatabase : external_cache
+    DeezerClient --> SongDatabase : external_cache
+    DeezerClient ..> DeezerMatch : returns
+
+    SongValidator --> DeezerClient : verify
+    SongValidator --> GenreTaxonomy : is_allowed
+    SongValidator ..> recommender : _normalize, _check_duplicates
+
+    PlaylistWriter ..> PlaylistEntry
+    PlaylistEntry --> Song
+
+    seed_db ..> recommender : load_songs
+    seed_db ..> DeezerClient : verify seed rows
+    seed_db ..> SongDatabase : add_pending
+    app --> PlaylistAgent : run
+    app --> SongDatabase : list_pending, approve, reject
