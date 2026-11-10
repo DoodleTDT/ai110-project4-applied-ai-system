@@ -1,0 +1,66 @@
+[
+  {
+    "id": "sad-rock",
+    "prompt": "sad low-energy rock",
+    "genres": ["rock"],
+    "moods": ["sad", "moody"],
+    "energy": [0.0, 0.4],
+    "acoustic": null
+  },
+  {
+    "id": "rainy-jazz",
+    "prompt": "Rainy Sunday study playlist, calm and a little jazzy",
+    "genres": ["jazz"],
+    "moods": ["chill", "relaxed", "focused"],
+    "energy": [0.0, 0.45],
+    "acoustic": null
+  },
+  {
+    "id": "summer-pop",
+    "prompt": "upbeat pop for a summer road trip",
+    "genres": ["pop"],
+    "moods": ["happy", "energetic", "uplifting"],
+    "energy": [0.6, 1.0],
+    "acoustic": null
+  },
+  {
+    "id": "gym-metal",
+    "prompt": "angry heavy metal for the gym",
+    "genres": ["metal", "rock"],
+    "moods": ["angry", "intense", "energetic"],
+    "energy": [0.75, 1.0],
+    "acoustic": false
+  },
+  {
+    "id": "campfire-folk",
+    "prompt": "acoustic folk songs for a campfire",
+    "genres": ["folk", "country"],
+    "moods": ["relaxed", "chill", "happy"],
+    "energy": [0.1, 0.5],
+    "acoustic": true
+  },
+  {
+    "id": "lofi-coding",
+    "prompt": "late night lofi beats to code to",
+    "genres": ["lofi", "hip-hop", "electronic"],
+    "moods": ["focused", "chill", "relaxed"],
+    "energy": [0.1, 0.45],
+    "acoustic": null
+  },
+  {
+    "id": "rnb-slow",
+    "prompt": "romantic r&b slow jams",
+    "genres": ["r&b", "soul"],
+    "moods": ["romantic"],
+    "energy": [0.2, 0.55],
+    "acoustic": null
+  },
+  {
+    "id": "edm-party",
+    "prompt": "high energy electronic dance music for a party",
+    "genres": ["electronic"],
+    "moods": ["energetic", "happy"],
+    "energy": [0.75, 1.0],
+    "acoustic": false
+  }
+]

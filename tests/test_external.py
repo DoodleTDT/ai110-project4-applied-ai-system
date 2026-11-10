@@ -329,6 +329,19 @@ def test_requested_version_is_kept():
     assert client.search("Hurt (Live)", "Johnny Cash").deezer_id == 1
 
 
+def test_fresh_preview_url_is_fetched_every_time(db):
+    client, session = deezer(lambda url, params: {"id": 42, "preview": "https://cdn.example/new.mp3"}, db=db)
+    assert client.fresh_preview_url(42) == "https://cdn.example/new.mp3"
+    client.fresh_preview_url(42)
+    assert len(session.calls) == 2
+    assert session.calls[0]["url"].endswith("/track/42")
+
+
+def test_fresh_preview_url_missing_is_none():
+    client, _ = deezer(lambda url, params: {"id": 42, "preview": ""})
+    assert client.fresh_preview_url(42) is None
+
+
 def test_deezer_error_payload_raises():
     client, _ = deezer(lambda url, params: {"error": {"code": 4, "message": "Quota limit exceeded"}})
     with pytest.raises(ExternalAPIError, match="Quota"):

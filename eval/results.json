@@ -1,0 +1,1128 @@
+{
+  "summary": {
+    "date": "2026-11-10 16:38",
+    "model": "claude-haiku-5-5",
+    "k": 10,
+    "database": "C:\\Users\\TIONNA\\.vscode\\project files\\AI-110-assignments\\ai110-project4-applied-ai-system\\eval\\eval_run.db3",
+    "prompts": 8,
+    "errors": 0,
+    "precision": 0.7125,
+    "baseline_precision": 0.45,
+    "mean_score": 6.0855,
+    "baseline_mean_score": 5.087375,
+    "traceability": 1.0,
+    "seed_traceability": 0.0,
+    "parse": {
+      "genre": 1.0,
+      "mood": 1.0,
+      "energy": 1.0,
+      "acoustic": 1.0
+    },
+    "checked": 120,
+    "not_found": 10,
+    "unverifiable_rate": 0.08333333333333333,
+    "seed_rows": 50,
+    "seed_not_found": 50,
+    "seed_unverifiable_rate": 1.0,
+    "staged": 110,
+    "mean_tokens": 6708.875,
+    "total_cost": 0.0093903,
+    "diversity": {
+      "before": {
+        "songs": 13,
+        "genres": 5,
+        "top_genre": "pop",
+        "top_share": 0.308,
+        "entropy": 0.906
+      },
+      "after": {
+        "songs": 123,
+        "genres": 29,
+        "top_genre": "pop",
+        "top_share": 0.146,
+        "entropy": 0.885
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "sad-rock",
+      "prompt": "sad low-energy rock",
+      "parse": {
+        "genre": true,
+        "mood": true,
+        "energy": true,
+        "acoustic": null
+      },
+      "profile": {
+        "favorite_genres": [
+          "rock"
+        ],
+        "favorite_mood": "sad",
+        "target_energy": 0.25,
+        "likes_acoustic": null
+      },
+      "used_external": true,
+      "staged": 15,
+      "checked_on_deezer": 15,
+      "not_found_on_deezer": 0,
+      "precision": 0.7,
+      "traceability": 1.0,
+      "mean_score": 6.409999999999999,
+      "baseline_precision": 0.0,
+      "baseline_mean_score": 4.048,
+      "tokens": {
+        "limit": 30000,
+        "input_tokens": 5618,
+        "output_tokens": 1273,
+        "used": 6891,
+        "calls": [
+          {
+            "call": "parse_request",
+            "input_tokens": 1247,
+            "output_tokens": 48
+          },
+          {
+            "call": "estimate_vibe",
+            "input_tokens": 2552,
+            "output_tokens": 719
+          },
+          {
+            "call": "write_playlist",
+            "input_tokens": 1819,
+            "output_tokens": 506
+          }
+        ]
+      },
+      "cost_usd": 0.0011983000000000002,
+      "playlist": [
+        {
+          "title": "Lover, You Should've Come Over",
+          "artist": "Jeff Buckley",
+          "genre": "rock",
+          "energy": 0.3,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Forget Her",
+          "artist": "Jeff Buckley",
+          "genre": "alternative rock",
+          "energy": 0.3,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "All I Want",
+          "artist": "Kodaline",
+          "genre": "indie rock",
+          "energy": 0.3,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Miserable at Best",
+          "artist": "Mayday Parade",
+          "genre": "punk",
+          "energy": 0.7,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Cancer",
+          "artist": "My Chemical Romance",
+          "genre": "alternative rock",
+          "energy": 0.8,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "The Chain (2004 Remaster)",
+          "artist": "Fleetwood Mac",
+          "genre": "rock",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Sparks",
+          "artist": "Coldplay",
+          "genre": "rock",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "How To Fight Loneliness",
+          "artist": "Wilco",
+          "genre": "indie rock",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Iris",
+          "artist": "The Goo Goo Dolls",
+          "genre": "rock",
+          "energy": 0.5,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Everlong",
+          "artist": "Foo Fighters",
+          "genre": "grunge",
+          "energy": 0.85,
+          "fits_label": false,
+          "status": "pending"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "rainy-jazz",
+      "prompt": "Rainy Sunday study playlist, calm and a little jazzy",
+      "parse": {
+        "genre": true,
+        "mood": true,
+        "energy": true,
+        "acoustic": null
+      },
+      "profile": {
+        "favorite_genres": [
+          "jazz",
+          "smooth jazz"
+        ],
+        "favorite_mood": "focused",
+        "target_energy": 0.3,
+        "likes_acoustic": null
+      },
+      "used_external": true,
+      "staged": 14,
+      "checked_on_deezer": 15,
+      "not_found_on_deezer": 1,
+      "precision": 0.8,
+      "traceability": 1.0,
+      "mean_score": 4.85,
+      "baseline_precision": 0.3,
+      "baseline_mean_score": 4.178,
+      "tokens": {
+        "limit": 30000,
+        "input_tokens": 5199,
+        "output_tokens": 1267,
+        "used": 6466,
+        "calls": [
+          {
+            "call": "parse_request",
+            "input_tokens": 1261,
+            "output_tokens": 56
+          },
+          {
+            "call": "estimate_vibe",
+            "input_tokens": 2200,
+            "output_tokens": 693
+          },
+          {
+            "call": "write_playlist",
+            "input_tokens": 1738,
+            "output_tokens": 518
+          }
+        ]
+      },
+      "cost_usd": 0.0011534000000000002,
+      "playlist": [
+        {
+          "title": "Take Five",
+          "artist": "The Dave Brubeck Quartet",
+          "genre": "bebop",
+          "energy": 0.5,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "I Fall in Love Too Easily",
+          "artist": "Chet Baker",
+          "genre": "bebop",
+          "energy": 0.3,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Like a Tattoo",
+          "artist": "Sade",
+          "genre": "smooth jazz",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Just The Two Of Us",
+          "artist": "Grover Washington, Jr.",
+          "genre": "smooth jazz",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "What You Won't Do for Love",
+          "artist": "Bobby Caldwell",
+          "genre": "smooth jazz",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "My Way",
+          "artist": "Frank Sinatra",
+          "genre": "jazz",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Breezin'",
+          "artist": "George Benson",
+          "genre": "smooth jazz",
+          "energy": 0.5,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Feeling Good",
+          "artist": "Michael Bubl\u00e9",
+          "genre": "jazz",
+          "energy": 0.5,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Lover, You Should've Come Over",
+          "artist": "Jeff Buckley",
+          "genre": "rock",
+          "energy": 0.3,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Forget Her",
+          "artist": "Jeff Buckley",
+          "genre": "alternative rock",
+          "energy": 0.3,
+          "fits_label": false,
+          "status": "pending"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "summer-pop",
+      "prompt": "upbeat pop for a summer road trip",
+      "parse": {
+        "genre": true,
+        "mood": true,
+        "energy": true,
+        "acoustic": null
+      },
+      "profile": {
+        "favorite_genres": [
+          "pop",
+          "dance pop"
+        ],
+        "favorite_mood": "energetic",
+        "target_energy": 0.85,
+        "likes_acoustic": null
+      },
+      "used_external": true,
+      "staged": 14,
+      "checked_on_deezer": 15,
+      "not_found_on_deezer": 1,
+      "precision": 1.0,
+      "traceability": 1.0,
+      "mean_score": 6.473999999999999,
+      "baseline_precision": 0.7,
+      "baseline_mean_score": 6.4879999999999995,
+      "tokens": {
+        "limit": 30000,
+        "input_tokens": 5580,
+        "output_tokens": 1257,
+        "used": 6837,
+        "calls": [
+          {
+            "call": "parse_request",
+            "input_tokens": 1252,
+            "output_tokens": 54
+          },
+          {
+            "call": "estimate_vibe",
+            "input_tokens": 2556,
+            "output_tokens": 686
+          },
+          {
+            "call": "write_playlist",
+            "input_tokens": 1772,
+            "output_tokens": 517
+          }
+        ]
+      },
+      "cost_usd": 0.0011865,
+      "playlist": [
+        {
+          "title": "International Love (feat. Chris Brown)",
+          "artist": "Pitbull",
+          "genre": "dance pop",
+          "energy": 0.85,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Toxic",
+          "artist": "Britney Spears",
+          "genre": "dance pop",
+          "energy": 0.85,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "4 Minutes (feat. Justin Timberlake and Timbaland)",
+          "artist": "Madonna",
+          "genre": "dance pop",
+          "energy": 0.88,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "All I Wanted",
+          "artist": "Paramore",
+          "genre": "pop",
+          "energy": 0.8,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Detour",
+          "artist": "Kim Petras",
+          "genre": "dance pop",
+          "energy": 0.9,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Still into You",
+          "artist": "Paramore",
+          "genre": "pop",
+          "energy": 0.85,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Misery Business",
+          "artist": "Paramore",
+          "genre": "pop",
+          "energy": 0.9,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Read your Mind",
+          "artist": "Sabrina Carpenter",
+          "genre": "dance pop",
+          "energy": 0.75,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "no tears left to cry",
+          "artist": "Ariana Grande",
+          "genre": "dance pop",
+          "energy": 0.75,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Sign of the Times",
+          "artist": "Harry Styles",
+          "genre": "pop",
+          "energy": 0.7,
+          "fits_label": true,
+          "status": "pending"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "gym-metal",
+      "prompt": "angry heavy metal for the gym",
+      "parse": {
+        "genre": true,
+        "mood": true,
+        "energy": true,
+        "acoustic": true
+      },
+      "profile": {
+        "favorite_genres": [
+          "heavy metal"
+        ],
+        "favorite_mood": "angry",
+        "target_energy": 0.95,
+        "likes_acoustic": false
+      },
+      "used_external": true,
+      "staged": 15,
+      "checked_on_deezer": 15,
+      "not_found_on_deezer": 0,
+      "precision": 0.7,
+      "traceability": 1.0,
+      "mean_score": 7.023000000000001,
+      "baseline_precision": 0.8,
+      "baseline_mean_score": 6.037,
+      "tokens": {
+        "limit": 30000,
+        "input_tokens": 5553,
+        "output_tokens": 1271,
+        "used": 6824,
+        "calls": [
+          {
+            "call": "parse_request",
+            "input_tokens": 1250,
+            "output_tokens": 51
+          },
+          {
+            "call": "estimate_vibe",
+            "input_tokens": 2386,
+            "output_tokens": 727
+          },
+          {
+            "call": "write_playlist",
+            "input_tokens": 1917,
+            "output_tokens": 493
+          }
+        ]
+      },
+      "cost_usd": 0.0011908,
+      "playlist": [
+        {
+          "title": "Ace of Spades",
+          "artist": "Mot\u00f6rhead",
+          "genre": "heavy metal",
+          "energy": 0.95,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Painkiller",
+          "artist": "Judas Priest",
+          "genre": "heavy metal",
+          "energy": 0.95,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Breaking the Law",
+          "artist": "Judas Priest",
+          "genre": "heavy metal",
+          "energy": 0.9,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Crazy Train",
+          "artist": "Ozzy Osbourne",
+          "genre": "heavy metal",
+          "energy": 0.9,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "No More Tears",
+          "artist": "Ozzy Osbourne",
+          "genre": "heavy metal",
+          "energy": 0.6,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Nightmare",
+          "artist": "Avenged Sevenfold",
+          "genre": "metal",
+          "energy": 0.95,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "In the End",
+          "artist": "Linkin Park",
+          "genre": "hard rock",
+          "energy": 0.9,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Misery Business",
+          "artist": "Paramore",
+          "genre": "pop",
+          "energy": 0.9,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Faint",
+          "artist": "Linkin Park",
+          "genre": "hard rock",
+          "energy": 0.9,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Break Stuff",
+          "artist": "Limp Bizkit",
+          "genre": "rap",
+          "energy": 0.9,
+          "fits_label": false,
+          "status": "pending"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "campfire-folk",
+      "prompt": "acoustic folk songs for a campfire",
+      "parse": {
+        "genre": true,
+        "mood": true,
+        "energy": true,
+        "acoustic": true
+      },
+      "profile": {
+        "favorite_genres": [
+          "folk",
+          "indie folk"
+        ],
+        "favorite_mood": "relaxed",
+        "target_energy": 0.3,
+        "likes_acoustic": true
+      },
+      "used_external": true,
+      "staged": 12,
+      "checked_on_deezer": 15,
+      "not_found_on_deezer": 3,
+      "precision": 0.7,
+      "traceability": 1.0,
+      "mean_score": 6.02,
+      "baseline_precision": 0.5,
+      "baseline_mean_score": 6.626,
+      "tokens": {
+        "limit": 30000,
+        "input_tokens": 5440,
+        "output_tokens": 1376,
+        "used": 6816,
+        "calls": [
+          {
+            "call": "parse_request",
+            "input_tokens": 1252,
+            "output_tokens": 55
+          },
+          {
+            "call": "estimate_vibe",
+            "input_tokens": 2235,
+            "output_tokens": 598
+          },
+          {
+            "call": "write_playlist",
+            "input_tokens": 1953,
+            "output_tokens": 723
+          }
+        ]
+      },
+      "cost_usd": 0.001232,
+      "playlist": [
+        {
+          "title": "Simulation Swarm",
+          "artist": "Big Thief",
+          "genre": "indie folk",
+          "energy": 0.45,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Fourth of July",
+          "artist": "Sufjan Stevens",
+          "genre": "indie folk",
+          "energy": 0.3,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Bloody Mother Fucking Asshole",
+          "artist": "Martha Wainwright",
+          "genre": "indie folk",
+          "energy": 0.3,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "exile (feat. Bon Iver)",
+          "artist": "Taylor Swift",
+          "genre": "indie folk",
+          "energy": 0.3,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "loml",
+          "artist": "Taylor Swift",
+          "genre": "folk",
+          "energy": 0.2,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Mystery of Love",
+          "artist": "Sufjan Stevens",
+          "genre": "indie folk",
+          "energy": 0.35,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "King of Carrot Flowers Pt. 1",
+          "artist": "Neutral Milk Hotel",
+          "genre": "indie folk",
+          "energy": 0.5,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "What You Won't Do for Love",
+          "artist": "Bobby Caldwell",
+          "genre": "smooth jazz",
+          "energy": 0.4,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Inside",
+          "artist": "Kem",
+          "genre": "r&b",
+          "energy": 0.4,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Iris",
+          "artist": "The Goo Goo Dolls",
+          "genre": "rock",
+          "energy": 0.5,
+          "fits_label": false,
+          "status": "pending"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "lofi-coding",
+      "prompt": "late night lofi beats to code to",
+      "parse": {
+        "genre": true,
+        "mood": true,
+        "energy": true,
+        "acoustic": null
+      },
+      "profile": {
+        "favorite_genres": [
+          "lofi",
+          "electronic"
+        ],
+        "favorite_mood": "focused",
+        "target_energy": 0.35,
+        "likes_acoustic": null
+      },
+      "used_external": true,
+      "staged": 13,
+      "checked_on_deezer": 15,
+      "not_found_on_deezer": 2,
+      "precision": 0.4,
+      "traceability": 1.0,
+      "mean_score": 4.6,
+      "baseline_precision": 0.8,
+      "baseline_mean_score": 6.0840000000000005,
+      "tokens": {
+        "limit": 30000,
+        "input_tokens": 5062,
+        "output_tokens": 1241,
+        "used": 6303,
+        "calls": [
+          {
+            "call": "parse_request",
+            "input_tokens": 1249,
+            "output_tokens": 53
+          },
+          {
+            "call": "estimate_vibe",
+            "input_tokens": 2123,
+            "output_tokens": 639
+          },
+          {
+            "call": "write_playlist",
+            "input_tokens": 1690,
+            "output_tokens": 549
+          }
+        ]
+      },
+      "cost_usd": 0.0011267,
+      "playlist": [
+        {
+          "title": "Cry",
+          "artist": "Cigarettes After Sex",
+          "genre": "dubstep",
+          "energy": 0.3,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Will He",
+          "artist": "Joji",
+          "genre": "lofi",
+          "energy": 0.3,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Catdelions IIS",
+          "artist": "UrvTek",
+          "genre": "ambient",
+          "energy": 0.2,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Somewhat Damaged",
+          "artist": "Nine Inch Nails",
+          "genre": "electronic",
+          "energy": 0.5,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Starfuckers, Inc.",
+          "artist": "Nine Inch Nails",
+          "genre": "electronic",
+          "energy": 0.6,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Nightcall",
+          "artist": "Kavinsky",
+          "genre": "synthwave",
+          "energy": 0.7,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Crimewave",
+          "artist": "Crystal Castles",
+          "genre": "electronic",
+          "energy": 0.85,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Take Five",
+          "artist": "The Dave Brubeck Quartet",
+          "genre": "bebop",
+          "energy": 0.5,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Mystery of Love",
+          "artist": "Sufjan Stevens",
+          "genre": "indie folk",
+          "energy": 0.35,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Lover, You Should've Come Over",
+          "artist": "Jeff Buckley",
+          "genre": "rock",
+          "energy": 0.3,
+          "fits_label": false,
+          "status": "pending"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "rnb-slow",
+      "prompt": "romantic r&b slow jams",
+      "parse": {
+        "genre": true,
+        "mood": true,
+        "energy": true,
+        "acoustic": null
+      },
+      "profile": {
+        "favorite_genres": [
+          "r&b",
+          "soul"
+        ],
+        "favorite_mood": "romantic",
+        "target_energy": 0.3,
+        "likes_acoustic": null
+      },
+      "used_external": true,
+      "staged": 15,
+      "checked_on_deezer": 15,
+      "not_found_on_deezer": 0,
+      "precision": 1.0,
+      "traceability": 1.0,
+      "mean_score": 7.0,
+      "baseline_precision": 0.2,
+      "baseline_mean_score": 2.702,
+      "tokens": {
+        "limit": 30000,
+        "input_tokens": 5585,
+        "output_tokens": 1254,
+        "used": 6839,
+        "calls": [
+          {
+            "call": "parse_request",
+            "input_tokens": 1249,
+            "output_tokens": 53
+          },
+          {
+            "call": "estimate_vibe",
+            "input_tokens": 2559,
+            "output_tokens": 717
+          },
+          {
+            "call": "write_playlist",
+            "input_tokens": 1777,
+            "output_tokens": 484
+          }
+        ]
+      },
+      "cost_usd": 0.0011855,
+      "playlist": [
+        {
+          "title": "Kiss Of Life",
+          "artist": "Sade",
+          "genre": "soul",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Distant Lover",
+          "artist": "Marvin Gaye",
+          "genre": "soul",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Kissin' You",
+          "artist": "Total",
+          "genre": "r&b",
+          "energy": 0.5,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Number One (feat. Kanye West)",
+          "artist": "John Legend",
+          "genre": "r&b",
+          "energy": 0.6,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Earned It (Fifty Shades of Grey)",
+          "artist": "The Weeknd",
+          "genre": "r&b",
+          "energy": 0.6,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Love on the Brain",
+          "artist": "Rihanna",
+          "genre": "r&b",
+          "energy": 0.6,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Pearls",
+          "artist": "Sade",
+          "genre": "soul",
+          "energy": 0.3,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Frankie's First Affair",
+          "artist": "Sade",
+          "genre": "soul",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Inside",
+          "artist": "Kem",
+          "genre": "r&b",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "CAN'T GET OVER YOU (feat. Clams Casino)",
+          "artist": "Joji",
+          "genre": "r&b",
+          "energy": 0.4,
+          "fits_label": true,
+          "status": "pending"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "edm-party",
+      "prompt": "high energy electronic dance music for a party",
+      "parse": {
+        "genre": true,
+        "mood": true,
+        "energy": true,
+        "acoustic": true
+      },
+      "profile": {
+        "favorite_genres": [
+          "dance pop",
+          "electronic",
+          "house"
+        ],
+        "favorite_mood": "energetic",
+        "target_energy": 0.9,
+        "likes_acoustic": false
+      },
+      "used_external": true,
+      "staged": 12,
+      "checked_on_deezer": 15,
+      "not_found_on_deezer": 3,
+      "precision": 0.4,
+      "traceability": 1.0,
+      "mean_score": 6.307,
+      "baseline_precision": 0.3,
+      "baseline_mean_score": 4.536,
+      "tokens": {
+        "limit": 30000,
+        "input_tokens": 5576,
+        "output_tokens": 1119,
+        "used": 6695,
+        "calls": [
+          {
+            "call": "parse_request",
+            "input_tokens": 1251,
+            "output_tokens": 57
+          },
+          {
+            "call": "estimate_vibe",
+            "input_tokens": 2233,
+            "output_tokens": 583
+          },
+          {
+            "call": "write_playlist",
+            "input_tokens": 2092,
+            "output_tokens": 479
+          }
+        ]
+      },
+      "cost_usd": 0.0011171,
+      "playlist": [
+        {
+          "title": "Detour",
+          "artist": "Kim Petras",
+          "genre": "dance pop",
+          "energy": 0.9,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "4 Minutes (feat. Justin Timberlake and Timbaland)",
+          "artist": "Madonna",
+          "genre": "dance pop",
+          "energy": 0.88,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "International Love (feat. Chris Brown)",
+          "artist": "Pitbull",
+          "genre": "dance pop",
+          "energy": 0.85,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Toxic",
+          "artist": "Britney Spears",
+          "genre": "dance pop",
+          "energy": 0.85,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Crimewave",
+          "artist": "Crystal Castles",
+          "genre": "electronic",
+          "energy": 0.85,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Rush",
+          "artist": "Troye Sivan",
+          "genre": "dance pop",
+          "energy": 0.85,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Lady (Hear Me Tonight)",
+          "artist": "Modjo",
+          "genre": "house",
+          "energy": 0.85,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Bring Your Love",
+          "artist": "Madonna",
+          "genre": "dance pop",
+          "energy": 0.85,
+          "fits_label": false,
+          "status": "pending"
+        },
+        {
+          "title": "Memories (feat. Kid Cudi)",
+          "artist": "David Guetta",
+          "genre": "house",
+          "energy": 0.85,
+          "fits_label": true,
+          "status": "pending"
+        },
+        {
+          "title": "Clarity",
+          "artist": "Zedd",
+          "genre": "electronic",
+          "energy": 0.85,
+          "fits_label": true,
+          "status": "pending"
+        }
+      ],
+      "error": null
+    }
+  ]
+}

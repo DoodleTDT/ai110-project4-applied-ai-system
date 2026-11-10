@@ -282,6 +282,13 @@ class DeezerClient(_HttpClient):
             # Only different versions so far: try the next query for the original
         return loose[0] if loose else None
 
+    def fresh_preview_url(self, deezer_id: int) -> Optional[str]:
+        """
+        Fetches a current 30-second preview URL for a track. Deezer preview URLs
+        expire, so stored ones go stale; this is never cached.
+        """
+        return self._call(f"/track/{int(deezer_id)}").get("preview") or None
+
     def search(self, title: str, artist: str) -> Optional[DeezerMatch]:
         """
         Looks up a song by title + artist. Returns a DeezerMatch only when both
