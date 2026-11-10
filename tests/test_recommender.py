@@ -198,6 +198,14 @@ def test_genre_order_is_kept():
     assert make_user(favorite_genres=["rock", "pop"]).favorite_genres == ["rock", "pop"]
 
 
+def test_genres_are_mapped_to_taxonomy_names():
+    assert make_user(favorite_genres=["Hip Hop", "alt rock"]).favorite_genres == ["hip-hop", "alternative rock"]
+
+
+def test_genre_spellings_of_the_same_genre_are_deduped():
+    assert make_user(favorite_genres=["hip-hop", "hip hop", "HipHop"]).favorite_genres == ["hip-hop"]
+
+
 @pytest.mark.parametrize("given, expected", [(1.7, 1.0), (-0.3, 0.0), (0, 0.0), (1, 1.0)])
 def test_target_energy_is_clamped(given, expected):
     assert make_user(target_energy=given).target_energy == expected
@@ -227,10 +235,32 @@ def test_exact_genre_match_scores_full_points():
     assert points == pytest.approx(4.0)
 
 
-def test_favorite_contained_in_song_genre_scores_full_points():
+def test_subgenre_matches_parent_favorite():
     points, reasons = genre_points(["pop"], "indie pop")
     assert points == pytest.approx(4.0)
-    assert 'genre match: "indie pop" contains "pop" (+4.0)' in reasons
+    assert 'genre match: "indie pop" is a type of "pop" (+4.0)' in reasons
+
+
+def test_metal_matches_rock_favorite():
+    # The model card's metal/rock limitation, fixed by the taxonomy
+    points, reasons = genre_points(["rock"], "metal")
+    assert points == pytest.approx(4.0)
+    assert 'genre match: "metal" is a type of "rock" (+4.0)' in reasons
+
+
+def test_grandchild_genre_matches_top_level_favorite():
+    points, _ = genre_points(["rock"], "grunge")
+    assert points == pytest.approx(4.0)
+
+
+def test_unrelated_genre_does_not_match():
+    points, _ = genre_points(["rock"], "jazz")
+    assert points == pytest.approx(0.0)
+
+
+def test_unknown_genre_only_matches_itself():
+    assert genre_points(["vaporwave"], "Vaporwave")[0] == pytest.approx(4.0)
+    assert genre_points(["pop"], "vaporwave")[0] == pytest.approx(0.0)
 
 
 def test_specific_favorite_does_not_match_broader_genre():
@@ -239,6 +269,7 @@ def test_specific_favorite_does_not_match_broader_genre():
 
 
 def test_partial_word_does_not_match():
+    # "rockabilly" is not on the controlled list, so it only matches itself
     points, _ = genre_points(["rock"], "rockabilly")
     assert points == pytest.approx(0.0)
 
@@ -263,9 +294,15 @@ def test_genre_with_symbols_matches_case_insensitively():
     assert points == pytest.approx(4.0)
 
 
-def test_hyphenated_genre_does_not_match_spaced_genre():
+def test_hyphenated_and_spaced_spellings_match():
+    # Both spellings map to the same taxonomy genre (was a non-match before the taxonomy)
     points, _ = genre_points(["hip-hop"], "hip hop")
-    assert points == pytest.approx(0.0)
+    assert points == pytest.approx(4.0)
+
+
+def test_genre_alias_matches():
+    points, _ = genre_points(["r&b"], "RnB")
+    assert points == pytest.approx(4.0)
 
 
 # --- Mood ---
@@ -420,6 +457,28 @@ def test_recommend_returns_song_objects():
     user = make_user(target_energy=0.8)
     results = make_small_recommender().recommend(user, k=2)
     assert all(isinstance(song, Song) for song in results)
+
+
+def test_song_provenance_fields_have_defaults():
+    song = make_small_recommender().songs[0]
+    assert song.source == "seed_csv"
+    assert song.mbid is None and song.deezer_id is None and song.preview_url is None
+    assert song.confidence is None and song.added_at is None
+    assert song.estimated_fields == []
+
+
+def test_estimated_fields_are_not_shared_between_songs():
+    first, second = make_small_recommender().songs
+    first.estimated_fields.append("energy")
+    assert second.estimated_fields == []
+
+
+def test_song_without_tempo_can_be_recommended():
+    song = Song(id=1, title="No Tempo", artist="A", genre="rock", mood="sad",
+                energy=0.3, tempo_bpm=None, valence=0.2, acousticness=0.6,
+                source="lastfm", estimated_fields=["energy", "valence", "acousticness"])
+    user = make_user(favorite_genres=["rock"], favorite_mood="sad", target_energy=0.3)
+    assert Recommender([song]).recommend(user, k=1) == [song]
 
 
 def test_explanation_includes_max_score():

@@ -1,7 +1,13 @@
 import csv
 import math
+from datetime import datetime
 from typing import List, Dict, Tuple, Optional, Union
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
+
+try:
+    from src.genres import TAXONOMY, normalize as _normalize
+except ModuleNotFoundError:
+    from genres import TAXONOMY, normalize as _normalize
 
 # Scoring weights (max total score = 9.0)
 GENRE_WEIGHT = 4.0
@@ -10,10 +16,6 @@ ENERGY_WEIGHT = 2.0
 ACOUSTIC_WEIGHT = 1.0
 
 MAX_FAVORITE_GENRES = 3
-
-def _normalize(label: str) -> str:
-    """Lowercases a label and collapses surrounding/inner whitespace."""
-    return " ".join(str(label).strip().lower().split())
 
 def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
     return max(low, min(high, float(value)))
@@ -43,9 +45,17 @@ class Song:
     genre: str
     mood: str
     energy: float
-    tempo_bpm: float
+    tempo_bpm: Optional[float]  # None when the source has no tempo (Deezer bpm 0)
     valence: float
     acousticness: float
+    # Provenance (RAG version); defaults describe a song from the starter CSV
+    source: str = "seed_csv"
+    mbid: Optional[str] = None
+    deezer_id: Optional[int] = None
+    preview_url: Optional[str] = None
+    confidence: Optional[float] = None
+    estimated_fields: List[str] = field(default_factory=list)
+    added_at: Optional[datetime] = None
 
 @dataclass
 class UserProfile:
@@ -63,10 +73,10 @@ class UserProfile:
         if isinstance(genres, str):
             genres = [genres]
 
-        # Normalize and dedupe while keeping the user's order
+        # Map onto the genre taxonomy and dedupe while keeping the user's order
         normalized = []
         for genre in genres:
-            genre = _normalize(genre)
+            genre = TAXONOMY.canonical(genre)
             if genre and genre not in normalized:
                 normalized.append(genre)
 
@@ -134,16 +144,11 @@ def load_songs(csv_path: str) -> List[Dict]:
 def _match_genre(favorite_genres: List[str], song_genre: str) -> Optional[str]:
     """
     Returns the favorite genre that matches the song's genre, or None.
-    A favorite matches when all of its words appear in the song's genre,
-    so "pop" matches "indie pop", but "indie pop" does not match "pop".
+    Uses the genre taxonomy: a favorite matches its own genre and any genre
+    under it, so "rock" matches "metal" and "pop" matches "indie pop", but
+    "indie pop" does not match "pop".
     """
-    song_words = set(song_genre.split())
-    if song_genre in favorite_genres:
-        return song_genre
-    for favorite in favorite_genres:
-        if set(favorite.split()) <= song_words:
-            return favorite
-    return None
+    return TAXONOMY.matches(favorite_genres, song_genre)
 
 def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """
@@ -155,14 +160,14 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     reasons = []
 
     # Genre: full points if any favorite matches; matches never stack
-    song_genre = _normalize(song["genre"])
+    song_genre = TAXONOMY.canonical(song["genre"])
     matched = _match_genre(user.favorite_genres, song_genre)
     if matched == song_genre:
         score += GENRE_WEIGHT
         reasons.append(f'genre match: "{song_genre}" (+{GENRE_WEIGHT:.1f})')
     elif matched:
         score += GENRE_WEIGHT
-        reasons.append(f'genre match: "{song_genre}" contains "{matched}" (+{GENRE_WEIGHT:.1f})')
+        reasons.append(f'genre match: "{song_genre}" is a type of "{matched}" (+{GENRE_WEIGHT:.1f})')
 
     # Mood: exact match only
     song_mood = _normalize(song["mood"])
