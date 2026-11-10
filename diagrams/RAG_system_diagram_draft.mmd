@@ -1,0 +1,129 @@
+architecture-beta
+    %% =====================================================================
+    %% MusicMatchMaker - RAG version (draft) - system diagram
+    %% Based on diagrams/tentative_plan.md. Shows the components, the
+    %% outside services and the data stores, and how they connect.
+    %% The step-by-step logic (scoring rules, guardrail checks, coverage
+    %% rule) lives in the plan; this view only shows who talks to whom.
+    %%
+    %% Note: architecture-beta does not support edge labels or punctuation
+    %% in titles, so the meaning of each connection is in the comments.
+    %% =====================================================================
+
+    %% ---------- User interface (app.py, Streamlit) ----------
+    group ui(internet)[Streamlit App]
+    service request_box(internet)[Playlist Request and Results] in ui
+    service review_panel(internet)[Pending Review Panel] in ui
+
+    %% ---------- Agent orchestration ----------
+    %% PlaylistAgent tools: search_local_db, search_external, propose_song_addition
+    group core(server)[Agent Core]
+    service agent(server)[PlaylistAgent] in core
+    service coverage(server)[CoverageChecker] in core
+    service logger(disk)[AgentLogger] in core
+
+    %% ---------- LLM modules (llm.py) ----------
+    group llm(server)[LLM Modules]
+    service parser(server)[RequestParser] in llm
+    service vibe(server)[VibeEstimator] in llm
+    service writer(server)[PlaylistWriter] in llm
+
+    %% ---------- Ranking (recommender.py, reused) ----------
+    group ranking(server)[Ranking Reused]
+    service recommender(server)[recommend_songs and score_song] in ranking
+    service taxonomy(server)[GenreTaxonomy] in ranking
+
+    %% ---------- External search clients (external.py) ----------
+    group clients(server)[External Clients]
+    service lastfm_client(server)[LastFmClient] in clients
+    service deezer_client(server)[DeezerClient] in clients
+
+    %% ---------- Guardrails (validation.py) ----------
+    group guard(server)[Guardrails]
+    service validator(server)[SongValidator] in guard
+
+    %% ---------- Storage (single SQLite .db3 file) ----------
+    group storage(database)[SQLite Database]
+    service songdb(server)[SongDatabase] in storage
+    service songs_tbl(database)[songs] in storage
+    service pending_tbl(database)[pending_songs] in storage
+    service cache_tbl(database)[external_cache] in storage
+
+    %% ---------- One-time seed (scripts/seed_db.py) ----------
+    group seed(disk)[One Time Seed]
+    service csv(disk)[data songs csv] in seed
+    service seed_script(server)[seed_db script] in seed
+
+    %% ---------- Outside services ----------
+    group anthropic(cloud)[Anthropic]
+    service claude(cloud)[Claude API] in anthropic
+
+    group music(internet)[Music APIs]
+    service lastfm_api(internet)[Lastfm API] in music
+    service deezer_api(internet)[Deezer API] in music
+
+    %% ---------- Logs ----------
+    service ai_log(disk)[ai_interactions and model card]
+
+    %% =====================================================================
+    %% Connections
+    %% =====================================================================
+
+    %% User sends a playlist description; agent returns the final playlist
+    request_box:R <--> L:agent
+
+    %% Step 1: agent asks RequestParser to turn text into a UserProfile
+    agent:T --> B:parser
+    %% RequestParser maps genre labels onto the controlled list
+    parser:L --> R:taxonomy
+
+    %% Every LLM module (parse, vibe estimates, final write-up) calls Claude
+    writer{group}:R --> L:claude{group}
+
+    %% Step 2: agent ranks candidates with the reused scorer
+    agent:B --> T:recommender
+    %% score_song uses GenreTaxonomy for genre matching (metal to rock)
+    recommender:L --> R:taxonomy
+    %% Candidates come from approved songs plus verified pending songs
+    songdb:T --> B:recommender
+
+    %% Step 3: agent runs the coverage check; it reads genre counts
+    agent:R --> L:coverage
+    songdb:R --> B:coverage
+
+    %% Step 4: coverage check triggers external search
+    coverage:R --> L:lastfm_client
+    lastfm_client:R <--> L:lastfm_api
+    lastfm_client:B --> T:deezer_client
+    deezer_client:R <--> L:deezer_api
+    %% Last.fm and Deezer results are cached
+    deezer_client:B <--> T:songdb
+
+    %% Step 4: LLM estimates energy, valence, acousticness from Last.fm tags
+    deezer_client:L --> R:vibe
+
+    %% Step 4b: guardrails verify, validate schema, dedupe, score confidence
+    vibe:B --> T:validator
+    %% Passing songs are staged in pending_songs
+    validator:B --> L:songdb
+
+    %% Step 5: agent asks PlaylistWriter for one cited reason per song
+    agent:L --> B:writer
+
+    %% SongDatabase owns all three tables
+    songdb:B --> T:songs_tbl
+    songdb:L --> R:pending_tbl
+    songdb:R --> L:cache_tbl
+
+    %% Review panel lists pending songs and approves or rejects them
+    %% approve = one transaction: insert into songs, delete from pending_songs
+    review_panel:B <--> L:songdb
+
+    %% One-time seed: CSV rows are checked on Deezer, then staged as pending
+    csv:R --> L:seed_script
+    seed_script:T --> B:deezer_client
+    seed_script:R --> B:songdb
+
+    %% Agent steps are logged for ai_interactions.md and the model card
+    agent:T --> B:logger
+    logger:T --> B:ai_log
