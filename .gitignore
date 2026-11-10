@@ -18,6 +18,9 @@ venv/
 .env
 *.env
 
+# Agent step logs (copy excerpts into ai_interactions.md as needed)
+logs/
+
 # Local SQLite database (rebuilt with scripts/seed_db.py)
 *.db3
 *.db3-journal
