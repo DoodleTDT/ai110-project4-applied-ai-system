@@ -13,7 +13,7 @@ The database path can be changed with the MMM_DB_PATH environment variable
 """
 
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import streamlit as st
@@ -107,7 +107,7 @@ def playlist_tab(k: int) -> None:
             except ExternalAPIError as error:
                 st.error(f"A music API failed: {error}")
 
-    result: PlaylistResult = st.session_state.get("result")
+    result: Optional[PlaylistResult] = st.session_state.get("result")
     if result is None:
         return
 
