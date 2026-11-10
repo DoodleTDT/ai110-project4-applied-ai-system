@@ -57,11 +57,13 @@ class FakeWriter:
 
 
 class FakeLastFm:
-    def __init__(self, tracks_by_tag, tags=("rock", "sad"), error_tags=()):
+    def __init__(self, tracks_by_tag, tags=("rock", "sad"), error_tags=(), tags_by_title=None):
         self.tracks_by_tag = tracks_by_tag
         self.tags = list(tags)
         self.error_tags = set(error_tags)
+        self.tags_by_title = tags_by_title or {}
         self.queried = []
+        self.tag_lookups = []
 
     def tag_top_tracks(self, tag, limit=50):
         self.queried.append(tag)
@@ -70,7 +72,8 @@ class FakeLastFm:
         return [dict(t) for t in self.tracks_by_tag.get(tag, [])][:limit]
 
     def top_tags(self, title, artist):
-        return list(self.tags)
+        self.tag_lookups.append(title)
+        return list(self.tags_by_title.get(title, self.tags))
 
 
 class FakeDeezer:
@@ -241,6 +244,68 @@ def test_search_queries_thin_genres_first_then_mood(db):
     lastfm = FakeLastFm({})
     make_agent(db, lastfm=lastfm, profile=profile).run("x", k=10)
     assert lastfm.queried == ["jazz", "pop", "sad"]
+
+
+def test_slots_are_shared_between_genre_and_mood_tags(db):
+    lastfm = FakeLastFm({"rock": [track(f"Rock {i}") for i in range(30)],
+                         "sad": [track(f"Sad {i}") for i in range(30)]})
+    result = make_agent(db, lastfm=lastfm, max_external_candidates=15).run("x", k=10)
+    titles = [s.title for s in result.staged]
+    assert sum(t.startswith("Rock") for t in titles) == 8
+    assert sum(t.startswith("Sad") for t in titles) == 7
+
+
+def test_short_tag_list_leaves_its_slots_to_other_tags(db):
+    lastfm = FakeLastFm({"rock": [track(f"Rock {i}") for i in range(30)], "sad": [track("Sad 0")]})
+    result = make_agent(db, lastfm=lastfm, max_external_candidates=6).run("x", k=10)
+    assert sorted(s.title for s in result.staged) == ["Rock 0", "Rock 1", "Rock 2", "Rock 3", "Rock 4", "Sad 0"]
+
+
+def test_candidates_with_clashing_tags_are_skipped_before_deezer(db):
+    lastfm = FakeLastFm({"rock": [track("Real Party"), track("Real Sad")]},
+                        tags_by_title={"Real Party": ["rock", "party", "upbeat"]})
+    deezer = FakeDeezer()
+    result = make_agent(db, lastfm=lastfm, deezer=deezer).run("x", k=10)
+    assert [s.title for s in result.staged] == ["Real Sad"]
+    assert "Real Party" not in deezer.searched
+
+
+def test_low_energy_request_skips_energetic_tags():
+    from src.pipeline import clashing_tags
+    calm = UserProfile(favorite_genres=["rock"], favorite_mood="moody", target_energy=0.2)
+    hype = UserProfile(favorite_genres=["rock"], favorite_mood="moody", target_energy=0.9)
+    assert "workout" in clashing_tags(calm) and "mellow" not in clashing_tags(calm)
+    assert "mellow" in clashing_tags(hype) and "workout" not in clashing_tags(hype)
+
+
+def test_tag_lookups_are_capped(db):
+    lastfm = FakeLastFm({"rock": [track(f"Real {i}") for i in range(30)]}, tags=["party"])
+    make_agent(db, lastfm=lastfm, max_external_candidates=4).run("x", k=10)
+    assert len(lastfm.tag_lookups) == 12  # 4 candidates x MAX_TAG_LOOKUP_FACTOR, all clashing
+
+
+def test_tags_are_fetched_once_per_candidate(db):
+    lastfm = FakeLastFm({"rock": [track("Real A")]})
+    make_agent(db, lastfm=lastfm).run("x", k=10)
+    assert lastfm.tag_lookups == ["Real A"]
+
+
+def test_staged_song_keeps_lastfm_title_not_deezer_version(db):
+    class RemixDeezer(FakeDeezer):
+        def search(self, title, artist):
+            match = super().search(title, artist)
+            match.title = f"{title} (Radio Remix)"
+            return match
+
+    deezer = RemixDeezer()
+    lastfm = FakeLastFm({"rock": [track("Mr. Brightside", artist="The Killers")]})
+    agent = make_agent(db, lastfm=lastfm, deezer=deezer)
+    result = agent.run("x", k=10)
+    [song] = result.staged
+    assert song.title == "Mr. Brightside"
+    # Deezer only had a different version, so the exact-title point is not earned:
+    # verified 0.5 + tempo 0.1 + genre tag 0.1 + mood tag 0.1 (no exact title, no mbid)
+    assert song.confidence == pytest.approx(0.8)
 
 
 def test_lastfm_error_on_one_tag_moves_on(db):

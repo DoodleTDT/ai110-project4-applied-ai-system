@@ -45,6 +45,46 @@ except ModuleNotFoundError:
 
 MAX_EXTERNAL_CANDIDATES = 15
 LASTFM_TRACKS_PER_TAG = 30
+# Tag lookups allowed per request while filtering, as a multiple of the candidate cap
+MAX_TAG_LOOKUP_FACTOR = 3
+
+# Last.fm tags that contradict a requested mood or energy level
+_HAPPY_TAGS = {"happy", "feel good", "fun", "upbeat", "party", "cheerful", "uplifting", "summer"}
+_SAD_TAGS = {"sad", "depressing", "melancholy", "melancholic", "heartbreak", "breakup"}
+_ENERGETIC_TAGS = {"energetic", "party", "dance", "upbeat", "hype", "workout", "aggressive",
+                   "high energy", "banger"}
+_CALM_TAGS = {"chill", "chillout", "calm", "relaxing", "mellow", "soft", "sleep", "peaceful", "lullaby"}
+_ANGRY_TAGS = {"angry", "aggressive", "rage"}
+
+MOOD_CLASHES: Dict[str, set] = {
+    "sad": _HAPPY_TAGS, "moody": _HAPPY_TAGS,
+    "happy": _SAD_TAGS, "uplifting": _SAD_TAGS,
+    "chill": _ENERGETIC_TAGS | _ANGRY_TAGS, "relaxed": _ENERGETIC_TAGS | _ANGRY_TAGS,
+    "dreamy": _ENERGETIC_TAGS | _ANGRY_TAGS, "focused": _ENERGETIC_TAGS,
+    "romantic": _ANGRY_TAGS,
+    "intense": _CALM_TAGS, "energetic": _CALM_TAGS, "angry": _CALM_TAGS,
+}
+LOW_ENERGY = 0.35
+HIGH_ENERGY = 0.7
+
+
+def clashing_tags(profile: UserProfile) -> set:
+    """Tags that rule a candidate out for this request (mood clashes, plus energy clashes)."""
+    tags = set(MOOD_CLASHES.get(profile.favorite_mood, set()))
+    if profile.target_energy <= LOW_ENERGY:
+        tags |= _ENERGETIC_TAGS
+    elif profile.target_energy >= HIGH_ENERGY:
+        tags |= _CALM_TAGS
+    return tags
+
+
+def _round_robin(lists: List[Tuple[str, List[Dict[str, Any]]]]):
+    """Yields (tag, track) taking one track from each tag's list in turn."""
+    longest = max((len(tracks) for _, tracks in lists), default=0)
+    for i in range(longest):
+        for tag, tracks in lists:
+            if i < len(tracks):
+                yield tag, tracks[i]
 
 
 @dataclass
@@ -167,32 +207,52 @@ class PlaylistAgent:
                         genre_counts: Dict[str, int]) -> List[Dict[str, Any]]:
         """
         Collects up to max_external_candidates new songs from Last.fm, querying the
-        requested genres with the fewest songs first, then the mood. Songs that are
-        already known are skipped here, before any Deezer or Claude call.
+        requested genres (fewest songs first) and the mood.
+
+        The slots are shared across the tags: one track is taken from each tag in
+        turn, so the genre tag's popular tracks can't fill every slot before the
+        mood tag is searched. Songs that are already known, or whose Last.fm tags
+        clash with the request (e.g. "party" for a sad low-energy request), are
+        skipped here, before any Deezer or Claude call.
         """
         tags = self.coverage.target_genres(profile, genre_counts) + [profile.favorite_mood]
-        seen = list(known)
-        candidates: List[Dict[str, Any]] = []
-        for tag in tags:
-            if len(candidates) >= self.max_external_candidates:
-                break
+        lists = []
+        for tag in dict.fromkeys(tags):
             try:
-                tracks = self.lastfm.tag_top_tracks(tag, limit=LASTFM_TRACKS_PER_TAG)
+                lists.append((tag, self.lastfm.tag_top_tracks(tag, limit=LASTFM_TRACKS_PER_TAG)))
             except ExternalAPIError as error:
                 self.logger.log_step("search_external_error", {"tag": tag, "error": str(error)})
+
+        clashes = clashing_tags(profile)
+        max_lookups = self.max_external_candidates * MAX_TAG_LOOKUP_FACTOR
+        seen = list(known)
+        candidates: List[Dict[str, Any]] = []
+        skipped: List[Dict[str, Any]] = []
+        lookups = 0
+        for tag, track in _round_robin(lists):
+            if len(candidates) >= self.max_external_candidates or lookups >= max_lookups:
+                break
+            if not track.get("title") or not track.get("artist"):
                 continue
-            for track in tracks:
-                if len(candidates) >= self.max_external_candidates:
-                    break
-                if not track.get("title") or not track.get("artist"):
-                    continue
-                stub = _stub_song(track["title"], track["artist"], mbid=track.get("mbid"))
-                if self.validator.is_duplicate(stub, seen):
-                    continue
-                seen.append(stub)
-                candidates.append({**track, "query_tag": tag})
+            stub = _stub_song(track["title"], track["artist"], mbid=track.get("mbid"))
+            if self.validator.is_duplicate(stub, seen):
+                continue
+            seen.append(stub)
+            lookups += 1
+            try:
+                track_tags = self.lastfm.top_tags(track["title"], track["artist"])
+            except ExternalAPIError:
+                track_tags = []
+            clash = sorted(clashes.intersection(track_tags))
+            if clash:
+                skipped.append({"song": f'{track["title"]} - {track["artist"]}', "clashing_tags": clash})
+                continue
+            candidates.append({**track, "query_tag": tag, "tags": track_tags})
+
         self.logger.log_step("search_external", {
-            "tags": tags, "candidates": [f'{c["title"]} - {c["artist"]}' for c in candidates],
+            "tags": tags,
+            "candidates": [f'{c["title"]} - {c["artist"]} ({c["query_tag"]})' for c in candidates],
+            "skipped_for_clashing_tags": skipped,
         })
         return candidates
 
@@ -201,9 +261,11 @@ class PlaylistAgent:
         """
         Builds the full Song, runs every guardrail and stages it in pending_songs.
         Returns (song, []) when staged, or (None, reasons) when rejected.
+        The song keeps Last.fm's title and artist; Deezer's title (which may carry
+        a version suffix) is only used for the confidence check.
         """
         song = Song(
-            id=0, title=match.title, artist=match.artist, genre=vibe["genre"], mood=vibe["mood"],
+            id=0, title=candidate["title"], artist=candidate["artist"], genre=vibe["genre"], mood=vibe["mood"],
             energy=vibe["energy"], tempo_bpm=match.bpm, valence=vibe["valence"],
             acousticness=vibe["acousticness"], source="lastfm", mbid=candidate.get("mbid"),
             deezer_id=match.deezer_id, preview_url=match.preview_url,
@@ -220,6 +282,7 @@ class PlaylistAgent:
         self.logger.log_step("propose_song_addition", {
             "title": song.title, "artist": song.artist, "genre": song.genre,
             "confidence": song.confidence, "breakdown": result.breakdown,
+            "deezer_title": match.title, "deezer_alternate_version": match.alternate_version,
         })
         return song, []
 
@@ -262,31 +325,34 @@ class PlaylistAgent:
             if match is None:
                 rejected.append({"song": label, "reasons": ["not found on Deezer"]})
                 continue
-            stub = _stub_song(match.title, match.artist, mbid=candidate.get("mbid"), deezer_id=match.deezer_id)
+            stub = _stub_song(candidate["title"], candidate["artist"], mbid=candidate.get("mbid"),
+                              deezer_id=match.deezer_id)
             if self.validator.is_duplicate(stub, known + [v[0]["stub"] for v in verified]):
                 rejected.append({"song": label, "reasons": ["duplicate of a song already in the database"]})
                 continue
-            try:
-                tags = self.lastfm.top_tags(candidate["title"], candidate["artist"])
-            except ExternalAPIError:
-                tags = []
+            tags = candidate.get("tags")
+            if tags is None:
+                try:
+                    tags = self.lastfm.top_tags(candidate["title"], candidate["artist"])
+                except ExternalAPIError:
+                    tags = []
             verified.append(({**candidate, "stub": stub}, match, tags))
 
         if not verified:
             return []
         try:
             vibes = self.estimator.estimate_many(
-                [{"title": m.title, "artist": m.artist, "tags": tags} for _, m, tags in verified])
+                [{"title": c["title"], "artist": c["artist"], "tags": tags} for c, _, tags in verified])
         except LLMError as error:
             # Includes TokenBudgetExceeded: verified songs are skipped, nothing is guessed
             self.logger.log_step("estimate_vibe_error", {"error": str(error)})
-            rejected.extend({"song": f"{m.title} - {m.artist}", "reasons": [f"no vibe estimate: {error}"]}
-                            for _, m, _ in verified)
+            rejected.extend({"song": f'{c["title"]} - {c["artist"]}', "reasons": [f"no vibe estimate: {error}"]}
+                            for c, _, _ in verified)
             return []
 
         staged: List[Song] = []
         for (candidate, match, tags), vibe in zip(verified, vibes):
-            label = f"{match.title} - {match.artist}"
+            label = f'{candidate["title"]} - {candidate["artist"]}'
             if vibe is None:
                 rejected.append({"song": label, "reasons": ["no vibe estimate returned"]})
                 continue

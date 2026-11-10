@@ -5,7 +5,7 @@ from src import config
 from src.config import MissingAPIKeyError
 from src.database import SongDatabase
 from src.external import (USER_AGENT, DeezerClient, DeezerMatch, ExternalAPIError,
-                          LastFmClient, comparable)
+                          LastFmClient, comparable, is_alternate_version)
 
 
 class FakeResponse:
@@ -209,7 +209,7 @@ def test_deezer_search_returns_match_with_bpm():
 
     assert match == DeezerMatch(deezer_id=42, title="Hey Jude (Remastered 2015)", artist="The Beatles",
                                 bpm=73.5, preview_url="https://cdn.example/hey-jude.mp3")
-    assert session.calls[0]["params"]["q"] == 'artist:"Beatles" track:"Hey Jude"'
+    assert session.calls[0]["params"]["q"] == "Beatles Hey Jude"
     assert session.calls[1]["url"].endswith("/track/42")
 
 
@@ -230,11 +230,12 @@ def test_deezer_wrong_title_is_not_a_match():
     assert client.search("Hey Jude", "The Beatles") is None
 
 
-def test_deezer_falls_back_to_plain_query():
-    results = lambda q: [HEY_JUDE] if not q.startswith("artist:") else []
+def test_deezer_falls_back_to_artist_track_query():
+    results = lambda q: [HEY_JUDE] if q.startswith("artist:") else []
     client, session = deezer(deezer_handler(results))
     assert client.search("Hey Jude", "The Beatles").deezer_id == 42
-    assert session.calls[1]["params"]["q"] == "The Beatles Hey Jude"
+    assert session.calls[0]["params"]["q"] == "The Beatles Hey Jude"
+    assert session.calls[1]["params"]["q"] == 'artist:"The Beatles" track:"Hey Jude"'
 
 
 def test_deezer_quotes_in_title_are_removed_from_query():
@@ -256,6 +257,76 @@ def test_deezer_match_is_cached(db):
     first = client.search("Hey Jude", "The Beatles")
     assert client.search("Hey Jude", "The Beatles") == first
     assert len(session.calls) == 2  # one search + one track lookup
+
+
+# --- version-aware matching ---
+
+def item(title, deezer_id, artist="The Killers"):
+    return {"id": deezer_id, "title": title, "artist": {"name": artist}, "preview": f"https://p/{deezer_id}.mp3"}
+
+
+@pytest.mark.parametrize("title, expected", [
+    ("Mr. Brightside (Jacques Lu Cont's Thin White Duke Radio Remix)", True),
+    ("Numb - Unshatter Film Soundtrack (Live in São Paulo)", True),
+    ("Song (Acoustic)", True),
+    ("Song - Radio Edit", True),
+    ("Song [Demo]", True),
+    ("Mr. Brightside (Jacques Lu Cont's Thin White Duke Mix)", True),
+    ("Mr. Brightside (The Lindbergh Palace Dub)", True),
+    ("Mr. Brightside (Jacques Lu Cont's Thin White Duke Short Version)", True),
+    ("Hey Jude (Remastered 2015)", False),
+    ("Song - 2011 Remaster", False),
+    ("Song (Remastered Version)", False),
+    ("Song (Album Version)", False),
+    ("Song (Original Mix)", False),
+    ("Live Forever", False),        # "live" in the main title, not a suffix
+    ("Song", False),
+])
+def test_is_alternate_version(title, expected):
+    assert is_alternate_version(title) is expected
+
+
+def test_exact_title_wins_over_earlier_remix():
+    results = [item("Mr. Brightside (Radio Remix)", 1), item("Mr. Brightside", 2)]
+    client, _ = deezer(deezer_handler(results))
+    assert client.search("Mr. Brightside", "The Killers").deezer_id == 2
+
+
+def test_original_wins_over_live_version_when_no_exact_title():
+    results = [item("Numb (Live in São Paulo)", 1, "Linkin Park"), item("Numb (2023 Remaster)", 2, "Linkin Park")]
+    client, _ = deezer(deezer_handler(results))
+    assert client.search("Numb", "Linkin Park").deezer_id == 2
+
+
+def test_second_query_is_tried_when_first_has_only_versions():
+    def results(query):
+        if query.startswith("artist:"):
+            return [item("Mr. Brightside", 2)]
+        return [item("Mr. Brightside (Radio Remix)", 1)]
+    client, session = deezer(deezer_handler(results))
+    match = client.search("Mr. Brightside", "The Killers")
+    assert match.deezer_id == 2 and not match.alternate_version
+    assert [c["params"].get("q", "")[:7] for c in session.calls[:2]] == ["The Kil", "artist:"]
+
+
+def test_version_is_used_when_deezer_has_nothing_else_but_its_bpm_is_not():
+    client, session = deezer(deezer_handler([item("Mr. Brightside (Radio Remix)", 1)], bpm=128))
+    match = client.search("Mr. Brightside", "The Killers")
+    assert match.deezer_id == 1
+    assert match.alternate_version is True
+    assert match.bpm is None
+    assert not any("/track/" in c["url"] for c in session.calls)
+
+
+def test_original_match_is_not_flagged_as_alternate():
+    client, _ = deezer(deezer_handler([HEY_JUDE]))
+    assert client.search("Hey Jude", "The Beatles").alternate_version is False
+
+
+def test_requested_version_is_kept():
+    results = [item("Hurt (Live)", 1, "Johnny Cash"), item("Hurt", 2, "Johnny Cash")]
+    client, _ = deezer(deezer_handler(results))
+    assert client.search("Hurt (Live)", "Johnny Cash").deezer_id == 1
 
 
 def test_deezer_error_payload_raises():

@@ -30,6 +30,7 @@ DEFAULT_CACHE_SECONDS = 7 * 24 * 3600  # one week
 
 LASTFM_URL = "https://ws.audioscrobbler.com/2.0/"
 DEEZER_URL = "https://api.deezer.com"
+SEARCH_LIMIT = 25  # Deezer results checked per query
 
 # Last.fm error codes that mean "nothing found" rather than a failure
 _LASTFM_NOT_FOUND = {6}
@@ -47,6 +48,9 @@ class DeezerMatch:
     artist: str
     bpm: Optional[float]        # Deezer reports 0 when it has no tempo; stored as None
     preview_url: Optional[str]
+    # True when Deezer only had a different recording (remix, live...): the song
+    # exists, but bpm is left out because it belongs to that other recording
+    alternate_version: bool = False
 
 
 def comparable(text: str) -> str:
@@ -63,6 +67,27 @@ def comparable(text: str) -> str:
     if text.startswith("the "):
         text = text[4:]
     return text
+
+
+# Suffix phrases that still mean the same recording; removed before the check below.
+_SAME_RECORDING = re.compile(
+    r"\b(original mix|album version|single version|original version|explicit|clean|mono|stereo|"
+    r"(\d{4} )?remaster(ed)?( \d{4})?( version)?)\b"
+)
+# Words in a title's bracket or " - " suffix that mean a different recording.
+_ALTERNATE_VERSION = re.compile(
+    r"\b(remix|mix|dub|version|live|acoustic|unplugged|demo|instrumental|karaoke|cover|edit|"
+    r"rework|sped up|slowed|reverb|session|soundtrack)\b"
+)
+
+
+def is_alternate_version(title: str) -> bool:
+    """True if the title's suffix marks a remix, live take or other different recording."""
+    text = normalize(title)
+    suffixes = re.findall(r"[\(\[](.*?)[\)\]]", text)
+    if " - " in text:
+        suffixes.append(text.split(" - ", 1)[1])
+    return any(_ALTERNATE_VERSION.search(_SAME_RECORDING.sub(" ", suffix)) for suffix in suffixes)
 
 
 class _HttpClient:
@@ -221,17 +246,41 @@ class DeezerClient(_HttpClient):
         return data
 
     def _find(self, title: str, artist: str) -> Optional[Dict[str, Any]]:
-        """Returns the first search result whose title and artist match, or None."""
+        """
+        Returns the best search result whose title and artist match, or None.
+        Preference order:
+          1. the title matches exactly (ignoring case and spacing)
+          2. a loose match that is not a different version (remix, live, cover...)
+          3. any loose match
+        A different version is only used when Deezer has nothing else, so its
+        bpm and preview don't replace the original recording's.
+        """
         want_title, want_artist = comparable(title), comparable(artist)
+        exact_title = normalize(title)
+        wanted_is_version = is_alternate_version(title)
         clean = lambda s: s.replace('"', " ").strip()
-        queries = [f'artist:"{clean(artist)}" track:"{clean(title)}"', f"{clean(artist)} {clean(title)}"]
+        # Plain search first: Deezer's artist:/track: syntax often returns nothing
+        queries = [f"{clean(artist)} {clean(title)}", f'artist:"{clean(artist)}" track:"{clean(title)}"']
+
+        loose: List[Dict[str, Any]] = []
         for query in queries:
-            results = self._call("/search", {"q": query, "limit": 10}).get("data") or []
+            results = self._call("/search", {"q": query, "limit": SEARCH_LIMIT}).get("data") or []
+            matches = []
             for item in results:
+                item_title = item.get("title", "")
                 item_artist = (item.get("artist") or {}).get("name", "")
-                if comparable(item.get("title", "")) == want_title and comparable(item_artist) == want_artist:
+                if comparable(item_title) == want_title and comparable(item_artist) == want_artist:
+                    matches.append(item)
+            for item in matches:
+                if normalize(item.get("title", "")) == exact_title:
                     return item
-        return None
+            if not wanted_is_version:
+                for item in matches:
+                    if not is_alternate_version(item.get("title", "")):
+                        return item  # e.g. "(Remastered 2015)": the same recording
+            loose.extend(matches)
+            # Only different versions so far: try the next query for the original
+        return loose[0] if loose else None
 
     def search(self, title: str, artist: str) -> Optional[DeezerMatch]:
         """
@@ -244,20 +293,24 @@ class DeezerClient(_HttpClient):
             item = self._find(title, artist)
             if item is None:
                 return None
-            track = self._call(f"/track/{int(item['id'])}")
-            bpm = track.get("bpm")
-            try:
-                bpm = float(bpm) if bpm else None
-            except (TypeError, ValueError):
-                bpm = None
+            alternate = is_alternate_version(item.get("title", "")) and not is_alternate_version(title)
+            bpm = None
+            if not alternate:  # a remix's tempo is not the original's: don't fetch it
+                track = self._call(f"/track/{int(item['id'])}")
+                try:
+                    bpm = float(track.get("bpm") or 0) or None
+                except (TypeError, ValueError):
+                    bpm = None
             match = DeezerMatch(
                 deezer_id=int(item["id"]),
                 title=str(item.get("title", "")),
                 artist=str((item.get("artist") or {}).get("name", "")),
                 bpm=bpm if bpm and bpm > 0 else None,
                 preview_url=item.get("preview") or None,
+                alternate_version=alternate,
             )
             return asdict(match)
 
-        value = self._cached(f"deezer:search:{normalize(artist)}|{normalize(title)}", fetch)
+        # v3: matching prefers the original recording; older cached picks are ignored
+        value = self._cached(f"deezer:search:v3:{normalize(artist)}|{normalize(title)}", fetch)
         return DeezerMatch(**value) if value else None
