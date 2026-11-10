@@ -13,3 +13,7 @@ venv/
 
 # Pytest cache
 .pytest_cache/
+
+# Local SQLite database (rebuilt with scripts/seed_db.py)
+*.db3
+*.db3-journal
