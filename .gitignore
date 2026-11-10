@@ -14,6 +14,10 @@ venv/
 # Pytest cache
 .pytest_cache/
 
+# Secrets (API keys); .env.example is committed instead
+.env
+*.env
+
 # Local SQLite database (rebuilt with scripts/seed_db.py)
 *.db3
 *.db3-journal

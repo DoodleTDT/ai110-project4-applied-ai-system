@@ -4,8 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from scripts.seed_db import seed_from_csv
+from scripts.seed_db import seed_from_csv, verify_pending
 from src.database import DuplicateSongError, PendingSong, SongDatabase
+from src.external import DeezerMatch, ExternalAPIError
 from src.recommender import Song
 
 SONGS_CSV = Path(__file__).parent.parent / "data" / "songs.csv"
@@ -226,3 +227,75 @@ def test_seed_twice_skips_duplicates(db):
     seed_from_csv(str(SONGS_CSV), db)
     assert seed_from_csv(str(SONGS_CSV), db) == {"added": 0, "skipped": 50}
     assert len(db.list_pending()) == 50
+
+
+class FakeDeezer:
+    """Stands in for DeezerClient: knows one real song, fails for one title, misses the rest."""
+
+    def __init__(self, known_title="Sunrise City", failing_title=None):
+        self.known_title = known_title
+        self.failing_title = failing_title
+        self.searched = []
+
+    def search(self, title, artist):
+        self.searched.append(title)
+        if title == self.failing_title:
+            raise ExternalAPIError("rate limited")
+        if title == self.known_title:
+            return DeezerMatch(deezer_id=7, title=title, artist=artist, bpm=None,
+                               preview_url="https://cdn.example/p.mp3")
+        return None
+
+
+def test_seed_with_deezer_records_verification(db):
+    counts = seed_from_csv(str(SONGS_CSV), db, FakeDeezer())
+    assert counts == {"added": 50, "skipped": 0, "verified": 1, "not_found": 49, "errors": 0}
+
+    pending = {p.song.title: p for p in db.list_pending()}
+    assert pending["Sunrise City"].verified is True
+    assert pending["Sunrise City"].song.deezer_id == 7
+    assert pending["Sunrise City"].song.preview_url == "https://cdn.example/p.mp3"
+    assert pending["Sunrise City"].song.tempo_bpm == 118  # CSV tempo kept when Deezer has none
+    assert pending["Midnight Coding"].verified is False
+    assert pending["Midnight Coding"].song.deezer_id is None
+    assert db.get_songs() == []
+
+
+def test_seed_check_errors_are_left_unchecked_and_retried(db):
+    seed_from_csv(str(SONGS_CSV), db, FakeDeezer(failing_title="Midnight Coding"))
+    pending = {p.song.title: p for p in db.list_pending()}
+    assert pending["Midnight Coding"].verified is None
+
+    retry = FakeDeezer()
+    counts = verify_pending(db, retry)
+    assert retry.searched == ["Midnight Coding"]  # only the unchecked row is retried
+    assert counts == {"verified": 0, "not_found": 1, "errors": 0}
+
+
+# --- set_verification ---
+
+def test_set_verification_fills_deezer_fields_and_missing_tempo(db):
+    pending_id = db.add_pending(make_song(tempo_bpm=None))
+    db.set_verification(pending_id, True, deezer_id=9, preview_url="https://x/p.mp3", tempo_bpm=101)
+    song = db.list_pending()[0]
+    assert song.verified is True
+    assert (song.song.deezer_id, song.song.preview_url, song.song.tempo_bpm) == (9, "https://x/p.mp3", 101)
+
+
+def test_set_verification_keeps_existing_tempo(db):
+    pending_id = db.add_pending(make_song(tempo_bpm=90))
+    db.set_verification(pending_id, True, tempo_bpm=150)
+    assert db.list_pending()[0].song.tempo_bpm == 90
+
+
+def test_set_verification_false_keeps_fields(db):
+    pending_id = db.add_pending(make_song(deezer_id=3))
+    db.set_verification(pending_id, False)
+    pending = db.list_pending()[0]
+    assert pending.verified is False
+    assert pending.song.deezer_id == 3
+
+
+def test_set_verification_unknown_id_raises(db):
+    with pytest.raises(KeyError):
+        db.set_verification(999, True)

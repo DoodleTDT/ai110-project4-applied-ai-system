@@ -228,6 +228,25 @@ class SongDatabase:
             for row in rows
         ]
 
+    def set_verification(self, pending_id: int, verified: bool, deezer_id: Optional[int] = None,
+                         preview_url: Optional[str] = None, tempo_bpm: Optional[float] = None) -> None:
+        """
+        Records an existence check on a pending song. Deezer fields are only
+        filled in when given; tempo_bpm only fills a missing tempo.
+        Raises KeyError if the pending id does not exist.
+        """
+        with self.conn:
+            cursor = self.conn.execute(
+                "UPDATE pending_songs SET verified = ?, "
+                "deezer_id = COALESCE(?, deezer_id), "
+                "preview_url = COALESCE(?, preview_url), "
+                "tempo_bpm = COALESCE(tempo_bpm, ?) "
+                "WHERE id = ?",
+                (int(bool(verified)), deezer_id, preview_url, tempo_bpm, pending_id),
+            )
+        if cursor.rowcount == 0:
+            raise KeyError(f"no pending song with id {pending_id}")
+
     def approve(self, pending_id: int) -> int:
         """
         Moves a pending song into songs in one transaction and returns its new id.
