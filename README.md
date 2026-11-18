@@ -2,7 +2,7 @@
 This is an updated version of Project 3: `Music Recommender Simulation`. This was a small music recommendation system that prioritized User preferences against genres/associated genres (4.0), mood (2.0), energy (2.0), and acoustics (1.0) through a weighted scale (out of 9.0 points), ranking the songs within a static database of 50. A playlist, with the size the User asks for, would be generated with the top songs in the database.
 
 ## Title and Summary
-**MusicMatchMaker** is an AI playlist builder using a RAG system. The User will describe the playlist they want in plain English, such as *"Rainy Sunday study playlist, calm and a little jazzy,"* and it returns a ranked list of songs, each with a short reason it was picked by Claude. The songs themselves come from a local library ranked by the original Project 3 scorer. When the library doesn't have enough good matches, the app finds more on Last.fm and confirms they're real recordings on Deezer. These matches are held for a person to approve before they join the library, including how they matched the playlist description and the confidence level of their verification.
+**MusicMatchMaker** is an AI playlist builder using a RAG system. The User will describe the playlist they want in plain English, such as *"Rainy Sunday study playlist, calm and a little jazzy,"* and it returns a ranked list of songs, each with a short reason it was picked by Claude. The songs themselves come from a local library ranked by the original Project 3 scorer. When the library doesn't have enough good matches, the app finds more on Last.fm and confirms they're real recordings on Deezer. These matches are held for a person to approve before they join the library, including how they matched the playlist description and the confidence level of their verification. Pending songs give 30 second previews before human approval.
 
 This matters because the original recommender only worked with structured preferences and a fixed list of 50 songs, none of which were verified to be real songs. MusicMatchMaker accepts natural language, recommends real songs, grows the database, and keeps the AI grounded: Claude never invents songs, and every recommendation can be traced to the database or a verified source.
 
@@ -84,12 +84,12 @@ Deezer is used for song verification and needs no key.
 
 ## Sample Outputs
 Notice on sample outputs:
-- Consistency is measured in how the program interprets the request; `Understood as:...`
+- Consistency is measured in how the program interprets the request; `Understood as:...`; If the request and interpretation is the same, then the songs will be the same.
 - Depending on how many prompts you have already done, the system may have more or less songs to choose from in the library.
 - If Last.FM and Deezer update the songs they have, the songs pulled may be different from person to person.
 
 Prompt 1: `Lively dancing songs with heavy bass`
-Playlist size: 10
+Playlist size: `10`
 ```
 Test 1
 - Understood as: dance pop, house, electronic · energetic · energy 0.85 · non-acoustic
@@ -106,7 +106,7 @@ Test 4
 ```
 
 Prompt 2: `Acoustic rock that is slow and somber`
-Playlist size: 10
+Playlist size: `10`
 ```
 Test 1
 - Understood as: rock, alternative rock · sad · energy 0.25 · acoustic
@@ -123,8 +123,11 @@ Test 4
 ```
 
 ## Design Decisions
-Why you built it this way, and what trade-offs you made.
+The problems I found in the original project was in the database itself. It recycled through the same songs, which meant the only way to balance the library out was to add new songs in manually. You could use AI to put more songs in the csv file, but the AI didn't have to give real song titles or artists. Overall, the point system would look skewed depending on the genre (Ex. lots of pop songs, low amount of jazz). The RAG system created was meant to remedy that bias. It uses two different platforms to find new songs for the library with every playlist request, meaning if the data is skewed towards a certain genre, the User can just ask for more songs to balance it out. The library gets bigger, and fake songs aren't allowed in to mess up the data.
 
+Another minor decision was to allow for the User to enter a playlist description instead of a stagnant User preference. This creates flexibility in the system while gathering songs. This also helps if the User doesn't know the exact kind of songs they're looking for.
+
+I decided to leave out the addition of other scoring variables, such as valence and and tempo_bpm. While it could narrow the scope of songs in the playlist, it's also not a change I found to be as helpful.
 
 ## Testing Summary
 What worked, what didn't, and what you learned.
