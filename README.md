@@ -83,8 +83,44 @@ Deezer is used for song verification and needs no key.
 
 
 ## Sample Outputs
-Need to provide inputs that can give consistent/similar outputs that others can test
+Notice on sample outputs:
+- Consistency is measured in how the program interprets the request; `Understood as:...`
+- Depending on how many prompts you have already done, the system may have more or less songs to choose from in the library.
+- If Last.FM and Deezer update the songs they have, the songs pulled may be different from person to person.
 
+Prompt 1: `Lively dancing songs with heavy bass`
+Playlist size: 10
+```
+Test 1
+- Understood as: dance pop, house, electronic · energetic · energy 0.85 · non-acoustic
+- 1 found in library, 10 found in Deezer
+Test 2
+- Understood as: dance pop, house · energetic · energy 0.90 · non-acoustic
+- 7 found in library, 3 found in Deezer
+Test 3
+- Understood as: dance pop, house · energetic · energy 0.85 · non-acoustic
+- All 10 found in library
+Test 4
+- Understood as: dance pop, house · energetic · energy 0.85 · non-acoustic
+- All 10 found in library
+```
+
+Prompt 2: `Acoustic rock that is slow and somber`
+Playlist size: 10
+```
+Test 1
+- Understood as: rock, alternative rock · sad · energy 0.25 · acoustic
+- 5 found in library, 5 found in Deezer
+Test 2
+- Understood as: rock, indie folk · sad · energy 0.25 · acoustic
+- 7 found in library, 3 found in Deezer
+Test 3
+- Understood as: rock, indie folk · sad · energy 0.25 · acoustic
+- All 10 found in library
+Test 4
+- Understood as: rock, indie folk · sad · energy 0.25 · acoustic
+- All 10 found in library
+```
 
 ## Design Decisions
 Why you built it this way, and what trade-offs you made.
