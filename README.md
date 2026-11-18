@@ -2,9 +2,9 @@
 This is an updated version of Project 3: `Music Recommender Simulation`. This was a small music recommendation system that prioritized User preferences against genres/associated genres (4.0), mood (2.0), energy (2.0), and acoustics (1.0) through a weighted scale (out of 9.0 points), ranking the songs within a static database of 50. A playlist, with the size the User asks for, would be generated with the top songs in the database.
 
 ## Title and Summary
-**MusicMatchMaker**
+**MusicMatchMaker** is an AI playlist builder using a RAG system. The User will describe the playlist they want in plain English, such as *"Rainy Sunday study playlist, calm and a little jazzy,"* and it returns a ranked list of songs, each with a short reason it was picked by Claude. The songs themselves come from a local library ranked by the original Project 3 scorer. When the library doesn't have enough good matches, the app finds more on Last.fm and confirms they're real recordings on Deezer. These matches are held for a person to approve before they join the library, including how they matched the playlist description and the confidence level of their verification.
 
-What your project does and why it matters.
+This matters because the original recommender only worked with structured preferences and a fixed list of 50 songs, none of which were verified to be real songs. MusicMatchMaker accepts natural language, recommends real songs, grows the database, and keeps the AI grounded: Claude never invents songs, and every recommendation can be traced to the database or a verified source.
 
 ## Architecture Overview
 The system diagram ([diagrams/RAG_system_diagram_draft.mmd](diagrams/RAG_system_diagram_draft.mmd)) shows how the parts connect. The user types a playlist request into the **Streamlit app**, and the **PlaylistAgent** ([src/pipeline.py](src/pipeline.py)) turns it into a ranked playlist through a fixed sequence of steps:
@@ -85,11 +85,14 @@ Deezer is used for song verification and needs no key.
 ## Sample Outputs
 Need to provide inputs that can give consistent/similar outputs that others can test
 
+
 ## Design Decisions
 Why you built it this way, and what trade-offs you made.
 
+
 ## Testing Summary
 What worked, what didn't, and what you learned.
+
 
 ## Reflection
 A brief note on what this project taught you about AI and problem-solving.
