@@ -125,18 +125,27 @@ Test 4
 ## Design Decisions
 The problems I found in the original project was in the database itself. It recycled through the same songs, which meant the only way to balance the library out was to add new songs in manually. You could use AI to put more songs in the csv file, but the AI didn't have to give real song titles or artists. Overall, the point system would look skewed depending on the genre (Ex. lots of pop songs, low amount of jazz). The RAG system created was meant to remedy that bias. It uses two different platforms to find new songs for the library with every playlist request, meaning if the data is skewed towards a certain genre, the User can just ask for more songs to balance it out. The library gets bigger, and fake songs aren't allowed in to mess up the data.
 
-Another minor decision was to allow for the User to enter a playlist description instead of a stagnant User preference. This creates flexibility in the system while gathering songs. This also helps if the User doesn't know the exact kind of songs they're looking for.
-
-I decided to leave out the addition of other scoring variables, such as valence and and tempo_bpm. While it could narrow the scope of songs in the playlist, it's also not a change I found to be as helpful.
+A few minor decisions include allowing the User to enter a playlist description instead of a stagnant User preference. This creates flexibility in the system while gathering songs. This also helps if the User doesn't know the exact kind of songs they're looking for. It was also decided to leave out the other scoring variables, such as valence and and tempo_bpm. While it could narrow the scope of songs in the playlist, it's also not a change I found to be as helpful. And the last design decision was to put a limit on how many credits could be used per request. A guardrail in case the processing took too long or somehow began to loop.
 
 ## Testing Summary
-What worked, what didn't, and what you learned.
+What worked?
+- All songs are pulled and tested into the pending_songs database as they're supposed. 
+- The User can review, approve, and reject songs.
+- Songs are curated into a playlist of the correct size.
+- Confidence test scores are passed for every song.
+- The system will stop when the credit limit is reached per request.
 
+What didn't work?
+- Getting the exact same output from the same input takes multiple entries.
+- Real songs sometimes get rejected from the Deezer testing.
+
+What I learned?
+- The process to verify things in the system takes many new sources and files.
 
 ## Reflection
 A brief note on what this project taught you about AI and problem-solving.
 
-Read `model_card.md` for more notes
+Read `model_card.md` notes
 
 
 
